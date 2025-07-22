@@ -3,21 +3,22 @@ import { Button } from './ui/button';
 import { LogOut, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { showError } from '@/utils/toast';
+import { useNavigate } from 'react-router-dom';
 
 const Header = () => {
   const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
     try {
       await logout();
-      // The redirect is now fully handled by the AuthContext state change
-      // and the ProtectedRoute component.
+      navigate('/'); // Redirigir a la página de inicio
     } catch (error) {
       showError('Error al cerrar sesión. Por favor, inténtalo de nuevo.');
       console.error('Error logging out:', error);
-      setIsLoggingOut(false); // Only reset on error, as success causes unmount
+      setIsLoggingOut(false); // Solo resetear en caso de error
     }
   };
 
