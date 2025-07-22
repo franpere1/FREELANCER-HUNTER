@@ -38,6 +38,10 @@ const EditProfile = () => {
     resolver: zodResolver(editProfileSchema),
   });
 
+  // Desestructurar onChange de register para poder llamarlo manualmente
+  const { onChange: profileImageFileOnChange, ...profileImageFileRegisterProps } = register('profile_image_file');
+  const { onChange: serviceImageFileOnChange, ...serviceImageFileRegisterProps } = register('service_image_file');
+
   useEffect(() => {
     if (profile) {
       setValue('name', profile.name);
@@ -187,8 +191,11 @@ const EditProfile = () => {
                   id="profile_image_file"
                   type="file"
                   accept="image/*"
-                  {...register('profile_image_file')}
-                  onChange={(e) => handleFileChange(e, 'profile')} // Simplificado
+                  {...profileImageFileRegisterProps}
+                  onChange={(e) => {
+                    handleFileChange(e, 'profile');
+                    profileImageFileOnChange(e); // Llama al onChange de react-hook-form
+                  }}
                 />
               </div>
             </div>
@@ -231,8 +238,11 @@ const EditProfile = () => {
                       id="service_image_file"
                       type="file"
                       accept="image/*"
-                      {...register('service_image_file')}
-                      onChange={(e) => handleFileChange(e, 'service')} // Simplificado
+                      {...serviceImageFileRegisterProps}
+                      onChange={(e) => {
+                        handleFileChange(e, 'service');
+                        serviceImageFileOnChange(e); // Llama al onChange de react-hook-form
+                      }}
                     />
                   </div>
                 </div>
