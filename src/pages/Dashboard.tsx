@@ -366,7 +366,7 @@ const Dashboard = () => {
                 <CardHeader>
                   <CardTitle>
                     {isSearching ? `Resultados para "${searchTerm}"` : 'Últimos Proveedores Registrados'}
-                  </Titel>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <LatestProviders 
