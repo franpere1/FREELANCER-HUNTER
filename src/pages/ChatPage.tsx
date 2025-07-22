@@ -60,7 +60,7 @@ const ChatPage = () => {
       const { data: connection, error: connectionError } = await supabase
         .from('unlocked_contacts')
         .select('id')
-        .or(`(client_id.eq.${user.id},provider_id.eq.${otherUserId}),(client_id.eq.${otherUserId},provider_id.eq.${user.id})`)
+        .or(`and(client_id.eq.${user.id},provider_id.eq.${otherUserId}),and(client_id.eq.${otherUserId},provider_id.eq.${user.id})`)
         .eq('feedback_submitted_for_this_unlock', false) // CRUCIAL: Ensure the connection is active
         .limit(1)
         .single();
@@ -90,7 +90,7 @@ const ChatPage = () => {
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select('*')
-        .or(`(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
         .order('timestamp', { ascending: true });
 
       if (messagesError) {
