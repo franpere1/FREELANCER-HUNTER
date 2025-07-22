@@ -82,6 +82,7 @@ const EditProfile = () => {
     }
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
+    console.log(`Public URL for ${bucket}:`, data.publicUrl); // Log de la URL pública
     return data.publicUrl;
   };
 
@@ -117,6 +118,8 @@ const EditProfile = () => {
         updateData.rate = data.rate;
         updateData.service_image = serviceImageUrl;
       }
+
+      console.log('Data being sent to Supabase profiles table:', updateData); // Log de los datos a enviar
 
       const { error } = await supabase
         .from('profiles')
