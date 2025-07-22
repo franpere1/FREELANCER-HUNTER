@@ -9,7 +9,7 @@ import { Star } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
-import FeedbackDialog from '@/components/FeedbackDialog'; // Importar el nuevo componente
+import FeedbackDialog from '@/components/FeedbackDialog';
 
 interface ProviderProfile {
   id: string;
@@ -209,7 +209,7 @@ const ProviderDetail = () => {
                           : 'text-gray-300'
                       }`}
                     />
-                  )}
+                  ))}
                   {provider.rate && <span className="ml-3 text-lg text-gray-700">~ ${provider.rate} BCV</span>}
                 </div>
               </div>
