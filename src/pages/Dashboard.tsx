@@ -51,12 +51,13 @@ const Dashboard = () => {
       else setLatestProviders(providersData || []);
       setProvidersLoading(false);
 
-      // Fetch active contacts
+      // Fetch active contacts (only those pending feedback)
       setActiveContactsLoading(true);
       const { data: unlockedData, error: unlockedError } = await supabase
         .from('unlocked_contacts')
         .select('provider_id, feedback_submitted_for_this_unlock')
-        .eq('client_id', profile.id);
+        .eq('client_id', profile.id)
+        .eq('feedback_submitted_for_this_unlock', false);
 
       if (unlockedError) {
         console.error("Error fetching active contacts:", unlockedError);
