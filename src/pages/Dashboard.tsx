@@ -1,6 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate, Link } from 'react-router-dom';
@@ -11,8 +11,9 @@ import { useEffect, useState, useCallback } from 'react';
 import LatestProviders from '@/components/LatestProviders';
 import BuyTokensDialog from '@/components/BuyTokensDialog';
 import FeedbackDialog from '@/components/FeedbackDialog';
-import { showSuccess } from '@/utils/toast';
+import { showSuccess, showError } from '@/utils/toast';
 import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
+import { Input } from '@/components/ui/input';
 
 const Dashboard = () => {
   const { profile, loading, refreshProfile, user } = useAuth();
@@ -28,6 +29,8 @@ const Dashboard = () => {
   const [requestingClients, setRequestingClients] = useState<any[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isSearching, setIsSearching] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -139,6 +142,41 @@ const Dashboard = () => {
       setProvidersLoading(false);
     }
   }, []);
+
+  const clearSearch = useCallback(() => {
+    setSearchTerm('');
+    setIsSearching(false);
+    fetchLatestProvidersForClient();
+  }, [fetchLatestProvidersForClient]);
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedSearch = searchTerm.trim();
+    if (!trimmedSearch) {
+      clearSearch();
+      return;
+    }
+
+    setIsSearching(true);
+    setProvidersLoading(true);
+    try {
+      const { data: providersData, error: providersError } = await supabase
+        .from('profiles')
+        .select('id, name, skill, rate, profile_image, star_rating')
+        .eq('type', 'provider')
+        .or(`name.ilike.%${trimmedSearch}%,skill.ilike.%${trimmedSearch}%,service_description.ilike.%${trimmedSearch}%`)
+        .limit(20);
+
+      if (providersError) throw providersError;
+      setLatestProviders(providersData || []);
+    } catch (error) {
+      console.error("Error searching providers:", error);
+      showError('Ocurrió un error al buscar proveedores.');
+      setLatestProviders([]);
+    } finally {
+      setProvidersLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (loading || !profile) {
@@ -300,7 +338,35 @@ const Dashboard = () => {
             <div className="mt-8">
               <Card>
                 <CardHeader>
-                  <CardTitle>Últimos Proveedores Registrados</CardTitle>
+                  <CardTitle>Buscar Proveedores</CardTitle>
+                  <CardDescription>Encuentra profesionales por nombre, oficio o palabras clave.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-2">
+                    <Input
+                      type="text"
+                      placeholder="Ej: Plomero, electricista, diseño web..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="flex-grow"
+                    />
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <Button type="submit" className="w-full">Buscar</Button>
+                      {isSearching && (
+                        <Button type="button" variant="outline" onClick={clearSearch} className="w-full">Limpiar</Button>
+                      )}
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {isSearching ? `Resultados para "${searchTerm}"` : 'Últimos Proveedores Registrados'}
+                  </Titel>
                 </CardHeader>
                 <CardContent>
                   <LatestProviders 
