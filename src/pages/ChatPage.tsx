@@ -56,10 +56,12 @@ const ChatPage = () => {
     const initializeChat = async () => {
       setLoading(true);
 
+      // Check for an ACTIVE connection where feedback has NOT been submitted
       const { data: connection, error: connectionError } = await supabase
         .from('unlocked_contacts')
         .select('id')
         .or(`(client_id.eq.${user.id},provider_id.eq.${otherUserId}),(client_id.eq.${otherUserId},provider_id.eq.${user.id})`)
+        .eq('feedback_submitted_for_this_unlock', false) // CRUCIAL: Ensure the connection is active
         .limit(1)
         .single();
 
