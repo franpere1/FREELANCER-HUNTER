@@ -78,8 +78,8 @@ const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading 
                       }`}
                     />
                   ))}
-                  {provider.rate && <span className="ml-2 text-sm text-gray-600">~ ${provider.rate}</span>}
                 </div>
+                {provider.rate && <p className="text-sm text-gray-600 mt-1">Costo estimado del servicio: ${provider.rate}</p>}
               </div>
             </div>
             <Button variant="outline" onClick={() => navigate(`/provider/${provider.id}`)}>

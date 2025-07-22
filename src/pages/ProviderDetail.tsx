@@ -228,8 +228,8 @@ const ProviderDetail = () => {
                 <CardDescription className="text-lg text-indigo-600 font-semibold">{provider.skill || 'Proveedor de Servicios'}</CardDescription>
                 <div className="flex items-center mt-2">
                   {[...Array(5)].map((_, i) => <Star key={i} className={`h-5 w-5 ${provider.star_rating && i < provider.star_rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />)}
-                  {provider.rate && <span className="ml-3 text-lg text-gray-700">~ ${provider.rate}</span>}
                 </div>
+                {provider.rate && <p className="mt-2 text-lg text-gray-700">Costo estimado del servicio: ${provider.rate}</p>}
               </div>
             </div>
           </CardHeader>
