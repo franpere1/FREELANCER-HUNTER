@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'; // Importar useCallback
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
@@ -9,8 +9,8 @@ import { Star, Phone, Mail } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
-import { cn } from '@/lib/utils'; // Importar la utilidad cn
-import FeedbackDialog from '@/components/FeedbackDialog'; // Importar el nuevo componente
+import { cn } from '@/lib/utils';
+import FeedbackDialog from '@/components/FeedbackDialog';
 
 interface ProviderProfile {
   id: string;
@@ -26,7 +26,7 @@ interface ProviderProfile {
   star_rating: number | null;
   service_image: string | null;
   rate: number | null;
-  feedback: any[] | null; // Asumiendo que feedback es un array de objetos JSONB
+  feedback: any[] | null;
 }
 
 const ProviderDetail = () => {
@@ -36,7 +36,8 @@ const ProviderDetail = () => {
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isContactUnlocked, setIsContactUnlocked] = useState(false);
-  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false); // Nuevo estado para el diálogo de feedback
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false); // Nuevo estado
 
   const fetchProviderAndUnlockStatus = useCallback(async () => {
     if (!id) {
@@ -46,6 +47,9 @@ const ProviderDetail = () => {
     }
 
     setLoading(true);
+    // Reiniciar el estado de feedback al cargar un nuevo proveedor o refrescar
+    setHasSubmittedFeedback(false); 
+
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -58,7 +62,6 @@ const ProviderDetail = () => {
       setProvider(null);
     } else {
       setProvider(data);
-      // Check if contact is already unlocked for the current client
       if (clientProfile && clientProfile.type === 'client' && user) {
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
@@ -69,20 +72,22 @@ const ProviderDetail = () => {
 
         if (!unlockedError && unlockedData) {
           setIsContactUnlocked(true);
+          // Si el contacto está desbloqueado, verificar si ya se envió feedback
+          const clientHasGivenFeedback = data.feedback?.some((fb: any) => fb.clientId === user.id) || false;
+          setHasSubmittedFeedback(clientHasGivenFeedback);
         } else {
           setIsContactUnlocked(false);
         }
       } else {
-        // If clientProfile or user are not available, assume not unlocked for safety
         setIsContactUnlocked(false);
       }
     }
     setLoading(false);
-  }, [id, user, clientProfile]); // Dependencias para useCallback
+  }, [id, user, clientProfile]);
 
   useEffect(() => {
     fetchProviderAndUnlockStatus();
-  }, [fetchProviderAndUnlockStatus]); // Ahora useEffect depende de la función memoizada
+  }, [fetchProviderAndUnlockStatus]);
 
   const getInitials = (name: string) => {
     if (!name) return '';
@@ -111,12 +116,14 @@ const ProviderDetail = () => {
       if (data === 'CONTACTO YA DESBLOQUEADO') {
         dismissToast(toastId);
         showSuccess('La información de contacto ya está desbloqueada.');
-        setIsContactUnlocked(true); // Asegurarse de que el estado sea verdadero
+        setIsContactUnlocked(true);
+        setHasSubmittedFeedback(false); // Asegurarse de que no esté difuminado si ya estaba desbloqueado
       } else if (data === 'DESBLOQUEO EXITOSO') {
-        await refreshProfile(); // Actualizar el saldo de tokens del cliente
+        await refreshProfile();
         dismissToast(toastId);
         showSuccess('¡Información de contacto desbloqueada con éxito!');
         setIsContactUnlocked(true);
+        setHasSubmittedFeedback(false); // Mostrar la información después de desbloquear
       } else {
         throw new Error('Respuesta inesperada del servidor.');
       }
@@ -125,6 +132,11 @@ const ProviderDetail = () => {
       console.error('Error al desbloquear contacto:', err);
       showError(err.message || 'Ocurrió un error al desbloquear la información.');
     }
+  };
+
+  const handleFeedbackSubmitted = () => {
+    fetchProviderAndUnlockStatus(); // Refrescar los datos del proveedor (comentarios y calificación)
+    setHasSubmittedFeedback(true); // Establecer el estado para difuminar la información de contacto
   };
 
   if (loading || authLoading) {
@@ -153,7 +165,9 @@ const ProviderDetail = () => {
 
   const isClient = clientProfile?.type === 'client';
   const canUnlock = isClient && !isContactUnlocked;
-  const showBlurred = isClient && !isContactUnlocked;
+  // La información se difumina si es cliente Y (no está desbloqueada O ya se envió feedback)
+  const showBlurred = isClient && (!isContactUnlocked || hasSubmittedFeedback);
+  const canGiveFeedback = isClient && isContactUnlocked && !hasSubmittedFeedback;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -227,7 +241,7 @@ const ProviderDetail = () => {
               </div>
             )}
 
-            {isContactUnlocked && isClient && ( // Mostrar el botón de calificar si el contacto está desbloqueado y es un cliente
+            {canGiveFeedback && (
               <div className="text-center pt-4 border-t">
                 <Button onClick={() => setIsFeedbackDialogOpen(true)} className="w-full md:w-auto">
                   Calificar Proveedor
@@ -268,13 +282,13 @@ const ProviderDetail = () => {
         </Card>
       </main>
 
-      {isClient && user && ( // Renderizar el diálogo de feedback solo si es un cliente y el usuario existe
+      {isClient && user && (
         <FeedbackDialog
           isOpen={isFeedbackDialogOpen}
           onClose={() => setIsFeedbackDialogOpen(false)}
           providerId={provider.id}
           clientId={user.id}
-          onFeedbackSubmitted={fetchProviderAndUnlockStatus} // Para refrescar los comentarios y la calificación
+          onFeedbackSubmitted={handleFeedbackSubmitted}
         />
       )}
     </div>
