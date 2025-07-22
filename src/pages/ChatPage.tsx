@@ -128,7 +128,7 @@ const ChatPage = () => {
       ).subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [user, otherUserId, authLoading, navigate, refreshProfile, preloadedOtherUser]);
+  }, [user, otherUserId, authLoading, navigate, refreshProfile]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
