@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award } from "lucide-react";
+import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
@@ -36,9 +36,12 @@ const Index = () => {
       </div>
       
       <div className="text-center mb-16 px-4">
-        <Briefcase className="mx-auto h-24 w-24 text-indigo-500 mb-4" />
+        <div className="relative mx-auto mb-8 flex h-40 w-40 items-center justify-center">
+          <Monitor className="h-full w-full text-indigo-300" />
+          <Search className="absolute h-20 w-20 text-indigo-500" />
+        </div>
         <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-500">
-          FREELANCER HUNTER
+          Encuentra al Profesional Perfecto
         </h1>
         <p className="text-xl text-gray-600 mt-4 max-w-2xl mx-auto">
           La plataforma que conecta clientes con los mejores profesionales y técnicos de Venezuela.
