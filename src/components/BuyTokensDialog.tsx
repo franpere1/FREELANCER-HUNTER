@@ -114,7 +114,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
               type="number"
               step="0.01"
               min="10"
-              value={usdAmount === '' ? '' : usdAmount.toString()} // Conversión explícita a string
+              value={String(usdAmount)} // Conversión explícita a string
               onChange={handleUsdChange}
               className="col-span-3"
               placeholder="Ej: 10.00"
@@ -128,7 +128,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
             </Label>
             <Input
               id="tokens"
-              value={tokensToReceive.toString()} // Conversión explícita a string
+              value={String(tokensToReceive)} // Conversión explícita a string
               readOnly
               className="col-span-3 bg-gray-100"
               disabled={isProcessing}
