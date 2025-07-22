@@ -15,7 +15,7 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
-import { showError, showLoading, dismissToast } from '@/utils/toast';
+import { showError, showLoading, dismissToast, showSuccess } from '@/utils/toast';
 import { ThumbsUp, ThumbsDown, Meh } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -53,29 +53,29 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
 
   const watchedFeedbackType = watch('feedbackType');
 
-  const onSubmit = async (data: FeedbackFormData) => {
-    const toastId = showLoading('Enviando comentario...');
-    try {
-      const { error } = await supabase.rpc('add_feedback', {
-        provider_id_in: providerId,
-        client_id_in: clientId,
-        feedback_type_in: data.feedbackType,
-        comment_in: data.comment || '', // Ensure comment is a string
-      });
+  const onSubmit = (data: FeedbackFormData) => {
+    const toastId = showLoading('Enviando tu comentario...');
 
+    // Fire-and-forget the RPC call to not block the UI
+    supabase.rpc('add_feedback', {
+      provider_id_in: providerId,
+      client_id_in: clientId,
+      feedback_type_in: data.feedbackType,
+      comment_in: data.comment || '',
+    }).then(({ error }) => {
+      dismissToast(toastId);
       if (error) {
-        throw error;
+        console.error('Error al enviar comentario:', error);
+        showError(error.message || 'Error al enviar el comentario.');
+      } else {
+        showSuccess('¡Gracias por tu comentario! La conversación ha sido cerrada.');
+        onFeedbackSubmitted(); // Callback to update parent state (e.g., re-fetch data)
       }
+    });
 
-      dismissToast(toastId);
-      onFeedbackSubmitted(); // Callback to update parent state and re-fetch data
-      reset(); // Reset form fields
-      onClose(); // Close the dialog
-    } catch (err: unknown) {
-      dismissToast(toastId);
-      console.error('Error al enviar comentario:', err);
-      showError(err instanceof Error ? err.message : String(err || 'Error al enviar el comentario.'));
-    }
+    // Close the dialog immediately for a faster perceived experience
+    reset();
+    onClose();
   };
 
   return (

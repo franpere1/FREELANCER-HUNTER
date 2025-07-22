@@ -49,8 +49,8 @@ const SimulatedBinancePay = () => {
     setIsProcessing(true);
 
     try {
-      // Simulate payment processing delay
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      // Simulate payment processing delay (reduced for better UX)
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const { data: currentProfile, error: fetchError } = await supabase
         .from('profiles')

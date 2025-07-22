@@ -222,7 +222,6 @@ const Dashboard = () => {
   };
 
   const handleFeedbackSubmitted = () => {
-    showSuccess('¡Gracias por tu comentario!');
     setIsFeedbackDialogOpen(false);
     setSelectedProviderForFeedback(null);
     setRefetchTrigger(t => t + 1);
