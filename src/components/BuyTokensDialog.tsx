@@ -24,6 +24,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
   const [usdAmount, setUsdAmount] = useState<number | ''>('');
   const [tokensToReceive, setTokensToReceive] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false); // Nuevo estado para el procesamiento
 
   const handleUsdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -55,6 +56,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
       return;
     }
 
+    setIsProcessing(true); // Iniciar el estado de procesamiento
     const toastId = showLoading('Procesando compra de tokens...');
 
     try {
@@ -88,6 +90,8 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
       dismissToast(toastId);
       console.error('Error al comprar tokens:', err);
       showError(`Error al procesar la compra: ${err.message || 'Inténtalo de nuevo.'}`);
+    } finally {
+      setIsProcessing(false); // Finalizar el estado de procesamiento
     }
   };
 
@@ -114,6 +118,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
               onChange={handleUsdChange}
               className="col-span-3"
               placeholder="Ej: 10.00"
+              disabled={isProcessing} // Deshabilitar durante el procesamiento
             />
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
@@ -126,6 +131,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
               value={tokensToReceive}
               readOnly
               className="col-span-3 bg-gray-100"
+              disabled={isProcessing} // Deshabilitar durante el procesamiento
             />
           </div>
           <div className="text-center text-sm text-muted-foreground mt-2">
@@ -133,9 +139,9 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Cancelar</Button>
-          <Button onClick={handleBuyTokens} disabled={!usdAmount || usdAmount < 10 || !!error}>
-            Comprar {tokensToReceive > 0 ? `${tokensToReceive} Tokens` : ''}
+          <Button variant="outline" onClick={onClose} disabled={isProcessing}>Cancelar</Button>
+          <Button onClick={handleBuyTokens} disabled={!usdAmount || usdAmount < 10 || !!error || isProcessing}>
+            {isProcessing ? 'Procesando...' : `Comprar ${tokensToReceive > 0 ? `${tokensToReceive} Tokens` : ''}`}
           </Button>
         </DialogFooter>
       </DialogContent>
