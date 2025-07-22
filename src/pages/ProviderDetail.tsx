@@ -81,8 +81,8 @@ const ProviderDetail = () => {
         feedbackGiven = data.feedback?.some((fb: any) => fb.clientId === user.id) || false;
       }
 
-      // Contact is visible if it's unlocked in DB AND feedback has NOT been given
-      setIsContactVisible(unlockedFromDB && !feedbackGiven);
+      // Contact is visible if it's unlocked in DB. The feedback status only affects the feedback button.
+      setIsContactVisible(unlockedFromDB); // <--- CAMBIO CLAVE AQUÍ
       setHasSubmittedFeedback(feedbackGiven);
     }
     setLoading(false);
@@ -118,18 +118,17 @@ const ProviderDetail = () => {
 
       if (data === 'DESBLOQUEO EXITOSO') {
         await refreshProfile(); // Refresh client's token balance
-        setIsContactVisible(true); // <--- Establecer visible inmediatamente
-        setHasSubmittedFeedback(false); // <--- Reiniciar el estado de feedback para este nuevo ciclo de desbloqueo
+        setIsContactVisible(true); // Set visible immediately
+        setHasSubmittedFeedback(false); // Reset feedback state for this new unlock cycle
         dismissToast(toastId);
         showSuccess('¡Información de contacto desbloqueada con éxito!');
-        // No es estrictamente necesario llamar a fetchProviderAndUnlockStatus aquí para la visibilidad,
-        // ya que la hemos establecido directamente. Se llamará en el siguiente render o si otros estados cambian.
-        // Sin embargo, la mantenemos para asegurar que todos los datos estén frescos, incluyendo los comentarios del proveedor.
-        // Eliminado: await fetchProviderAndUnlockStatus(); // Esto causaba el re-difuminado inmediato
+        // No es necesario llamar a fetchProviderAndUnlockStatus aquí, ya que hemos actualizado el estado optimísticamente.
+        // La próxima vez que fetchProviderAndUnlockStatus se ejecute (por ejemplo, al volver a montar el componente o al refrescar explícitamente),
+        // reevaluará basándose en la base de datos, pero la UX inmediata ya está manejada.
       } else if (data === 'CONTACTO YA DESBLOQUEADO') {
-        // Si ya estaba desbloqueado, aún queremos mostrarlo como visible.
-        // fetchProviderAndUnlockStatus se encargará de determinar si debe ser visible
-        // basándose en si ya se ha dado feedback.
+        // Esto significa que ya estaba desbloqueado Y no se había dado feedback.
+        // Por lo tanto, debería permanecer visible y el botón de feedback debería estar disponible.
+        // Aún necesitamos obtener el estado más reciente para asegurar la consistencia.
         await refreshProfile(); // Refresh client's token balance
         await fetchProviderAndUnlockStatus(); // Esto establecerá correctamente isContactVisible y hasSubmittedFeedback
         dismissToast(toastId);
@@ -145,11 +144,12 @@ const ProviderDetail = () => {
   };
 
   const handleFeedbackSubmitted = () => {
-    // Inmediatamente difuminar el contacto y marcar el feedback como enviado para una respuesta rápida de la UI
+    // Después de enviar feedback, el contacto debería volver a difuminarse, y el botón de desbloqueo debería reaparecer.
+    // Esto se debe a que el usuario ha "usado" este desbloqueo al proporcionar feedback.
     setIsContactVisible(false); 
     setHasSubmittedFeedback(true); 
     setIsFeedbackDialogOpen(false); // Cerrar el diálogo
-    // Luego, volver a obtener los datos del proveedor para actualizar la lista de feedback, la calificación por estrellas y reevaluar el estado de desbloqueo
+    // Volver a obtener los datos del proveedor para actualizar la lista de feedback, la calificación por estrellas y reevaluar el estado de desbloqueo.
     fetchProviderAndUnlockStatus(); 
   };
 
@@ -182,7 +182,7 @@ const ProviderDetail = () => {
   const showBlurred = isClient && !isContactVisible; 
   // El botón de desbloqueo se muestra si es un cliente Y el contacto no está visible actualmente
   const canUnlock = isClient && !isContactVisible; 
-  // El botón de feedback se muestra si es un cliente Y el contacto está visible Y no se ha enviado feedback
+  // El botón de feedback se muestra si es un cliente Y el contacto está visible Y no se ha enviado feedback para este ciclo de desbloqueo
   const canGiveFeedback = isClient && isContactVisible && !hasSubmittedFeedback; 
 
   return (
