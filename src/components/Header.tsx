@@ -6,9 +6,11 @@ import { LogOut } from 'lucide-react';
 const Header = () => {
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    // Redirige inmediatamente para una experiencia de usuario instantánea.
     navigate('/');
+    // El cierre de sesión se ejecuta en segundo plano.
+    supabase.auth.signOut();
   };
 
   return (
