@@ -28,6 +28,8 @@ const Dashboard = () => {
   const [selectedProviderForFeedback, setSelectedProviderForFeedback] = useState<any>(null);
   const [requestingClients, setRequestingClients] = useState<any[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
+  const [lastRequests, setLastRequests] = useState<any[]>([]);
+  const [lastRequestsLoading, setLastRequestsLoading] = useState(true);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
@@ -119,6 +121,48 @@ const Dashboard = () => {
     }
   }, [profile, user]);
 
+  const fetchLastRequests = useCallback(async () => {
+    if (!profile || profile.type !== 'provider') return;
+    setLastRequestsLoading(true);
+    try {
+      const { data: unlockData, error: unlockError } = await supabase
+        .from('unlocked_contacts')
+        .select('client_id, last_unlocked_at')
+        .eq('provider_id', profile.id)
+        .order('last_unlocked_at', { ascending: false })
+        .limit(3);
+
+      if (unlockError) throw unlockError;
+
+      if (unlockData && unlockData.length > 0) {
+        const clientIds = unlockData.map(u => u.client_id);
+        const { data: clients, error: clientsError } = await supabase
+          .from('profiles')
+          .select('id, name, profile_image')
+          .in('id', clientIds);
+        
+        if (clientsError) throw clientsError;
+
+        const combinedData = unlockData.map(unlock => {
+          const clientProfile = clients?.find(c => c.id === unlock.client_id);
+          return {
+            clientName: clientProfile?.name || 'Cliente Desconocido',
+            clientProfileImage: clientProfile?.profile_image,
+            unlocked_at: unlock.last_unlocked_at,
+          };
+        });
+        setLastRequests(combinedData);
+      } else {
+        setLastRequests([]);
+      }
+    } catch (error) {
+      console.error("Error fetching last requests:", error);
+      setLastRequests([]);
+    } finally {
+      setLastRequestsLoading(false);
+    }
+  }, [profile]);
+
   const fetchLatestProvidersForClient = useCallback(async () => {
     setProvidersLoading(true);
     try {
@@ -183,13 +227,15 @@ const Dashboard = () => {
       fetchLatestProvidersForClient();
     } else if (profile.type === 'provider') {
       fetchProviderData();
+      fetchLastRequests();
     } else {
       // Handle cases with no or unknown profile type
       setActiveContactsLoading(false);
       setProvidersLoading(false);
       setClientsLoading(false);
+      setLastRequestsLoading(false);
     }
-  }, [loading, profile, refetchTrigger, fetchClientData, fetchProviderData, fetchLatestProvidersForClient]);
+  }, [loading, profile, refetchTrigger, fetchClientData, fetchProviderData, fetchLatestProvidersForClient, fetchLastRequests]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -296,9 +342,32 @@ const Dashboard = () => {
               <Card>
                 <CardHeader><CardTitle>Últimos Servicios Solicitados</CardTitle></CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground">
-                    Aquí se mostrará un resumen de los últimos servicios que te han solicitado.
-                  </p>
+                  <ScrollArea className="h-48 pr-2">
+                    {lastRequestsLoading ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">Cargando...</p>
+                    ) : lastRequests.length > 0 ? (
+                      <div className="space-y-4">
+                        {lastRequests.map((req, index) => (
+                          <div key={index} className="flex items-center space-x-3">
+                            <Avatar className="h-10 w-10">
+                              <AvatarImage src={req.clientProfileImage || undefined} alt={req.clientName} />
+                              <AvatarFallback>{getInitials(req.clientName)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-semibold">{req.clientName}</p>
+                              <p className="text-xs text-muted-foreground">
+                                Solicitó tu servicio de: <span className="font-medium">{profile.skill || 'General'}</span>
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Aún no han solicitado tus servicios.
+                      </p>
+                    )}
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </div>
