@@ -34,13 +34,13 @@ const EditProfile = () => {
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [serviceImagePreview, setServiceImagePreview] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<EditProfileFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<EditProfileFormData>({
     resolver: zodResolver(editProfileSchema),
   });
 
-  // Desestructurar onChange de register para poder llamarlo manualmente
-  const { onChange: profileImageFileOnChange, ...profileImageFileRegisterProps } = register('profile_image_file');
-  const { onChange: serviceImageFileOnChange, ...serviceImageFileRegisterProps } = register('service_image_file');
+  // Observar los cambios en los campos de archivo
+  const watchedProfileImageFile = watch('profile_image_file');
+  const watchedServiceImageFile = watch('service_image_file');
 
   useEffect(() => {
     if (profile) {
@@ -56,32 +56,40 @@ const EditProfile = () => {
     }
   }, [profile, setValue]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'service') => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
+  // Efecto para generar la vista previa de la imagen de perfil
+  useEffect(() => {
+    if (watchedProfileImageFile && watchedProfileImageFile.length > 0) {
+      const file = watchedProfileImageFile[0];
       const reader = new FileReader();
       reader.onloadend = () => {
-        if (type === 'profile') {
-          setProfileImagePreview(reader.result as string);
-          setValue('profile_image_file', files, { shouldValidate: true }); // Actualiza el valor del formulario
-        } else {
-          setServiceImagePreview(reader.result as string);
-          setValue('service_image_file', files, { shouldValidate: true }); // Actualiza el valor del formulario
-        }
+        setProfileImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+    } else if (profile && !watchedProfileImageFile) {
+      // Si no hay archivo nuevo y el campo se limpió, vuelve a la imagen original del perfil
+      setProfileImagePreview(profile.profile_image);
     } else {
-      // Si no se selecciona ningún archivo, limpia la vista previa y el valor del formulario
-      if (type === 'profile') {
-        setProfileImagePreview(null);
-        setValue('profile_image_file', undefined, { shouldValidate: true });
-      } else {
-        setServiceImagePreview(null);
-        setValue('service_image_file', undefined, { shouldValidate: true });
-      }
+      setProfileImagePreview(null);
     }
-  };
+  }, [watchedProfileImageFile, profile]);
+
+  // Efecto para generar la vista previa de la imagen de servicio
+  useEffect(() => {
+    if (watchedServiceImageFile && watchedServiceImageFile.length > 0) {
+      const file = watchedServiceImageFile[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setServiceImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    } else if (profile && profile.type === 'provider' && !watchedServiceImageFile) {
+      // Si no hay archivo nuevo y el campo se limpió, vuelve a la imagen original del servicio
+      setServiceImagePreview(profile.service_image);
+    } else {
+      setServiceImagePreview(null);
+    }
+  }, [watchedServiceImageFile, profile]);
+
 
   const uploadFile = async (file: File, bucket: string): Promise<string | null> => {
     if (!user) return null;
@@ -110,19 +118,19 @@ const EditProfile = () => {
     let serviceImageUrl = profile.type === 'provider' ? profile.service_image : null;
 
     try {
-      console.log('Data received in onSubmit:', data); // Nuevo log
-      console.log('profile_image_file in data:', data.profile_image_file); // Nuevo log
-      console.log('service_image_file in data:', data.service_image_file); // Nuevo log
+      console.log('Data received in onSubmit:', data);
+      console.log('profile_image_file in data:', data.profile_image_file);
+      console.log('service_image_file in data:', data.service_image_file);
 
       if (data.profile_image_file && data.profile_image_file.length > 0) {
-        console.log('Attempting to upload profile image...'); // Nuevo log
+        console.log('Attempting to upload profile image...');
         const url = await uploadFile(data.profile_image_file[0], 'profile-images');
         if (url) profileImageUrl = url;
         else throw new Error("Error al subir la foto de perfil");
       }
 
       if (profile.type === 'provider' && data.service_image_file && data.service_image_file.length > 0) {
-        console.log('Attempting to upload service image...'); // Nuevo log
+        console.log('Attempting to upload service image...');
         const url = await uploadFile(data.service_image_file[0], 'service-images');
         if (url) serviceImageUrl = url;
         else throw new Error("Error al subir la foto del servicio");
@@ -191,11 +199,7 @@ const EditProfile = () => {
                   id="profile_image_file"
                   type="file"
                   accept="image/*"
-                  {...profileImageFileRegisterProps}
-                  onChange={(e) => {
-                    handleFileChange(e, 'profile');
-                    profileImageFileOnChange(e); // Llama al onChange de react-hook-form
-                  }}
+                  {...register('profile_image_file')} // Usar register directamente
                 />
               </div>
             </div>
@@ -238,11 +242,7 @@ const EditProfile = () => {
                       id="service_image_file"
                       type="file"
                       accept="image/*"
-                      {...serviceImageFileRegisterProps}
-                      onChange={(e) => {
-                        handleFileChange(e, 'service');
-                        serviceImageFileOnChange(e); // Llama al onChange de react-hook-form
-                      }}
+                      {...register('service_image_file')} // Usar register directamente
                     />
                   </div>
                 </div>
