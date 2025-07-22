@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit } from 'lucide-react';
+import { Edit, Star } from 'lucide-react'; // Importar el icono Star
 
 const Dashboard = () => {
   const { profile, loading } = useAuth();
@@ -61,9 +61,19 @@ const Dashboard = () => {
                   <AvatarImage src={profile.profile_image || undefined} alt={profile.name} />
                   <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
                 </Avatar>
-                <div>
+                <div className="flex flex-col"> {/* Usar flex-col para apilar elementos */}
                   <CardTitle className="text-2xl">{profile.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">{profile.email}</p>
+                  {profile.type === 'provider' && (
+                    <div className="flex flex-col items-start mt-2">
+                      <p className="text-sm font-semibold text-indigo-600">PROVEEDOR</p>
+                      <div className="flex space-x-0.5 mt-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="h-4 w-4 text-yellow-500" fill="none" stroke="currentColor" />
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
               <Button variant="outline" size="icon" onClick={() => navigate('/edit-profile')}>
