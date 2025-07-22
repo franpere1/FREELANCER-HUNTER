@@ -5,8 +5,13 @@ import { supabase } from '@/integrations/supabase/client';
 interface Profile {
   id: string;
   name: string;
+  email: string;
+  state: string;
+  phone: string;
   type: 'client' | 'provider';
-  // Agrega otros campos del perfil que necesites
+  category: string | null;
+  service_description: string | null;
+  profile_image: string | null;
 }
 
 interface AuthContextType {
@@ -25,7 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const getSession = async () => {
+    const getSessionAndProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
       setUser(session?.user ?? null);
@@ -40,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(false);
     };
 
-    getSession();
+    getSessionAndProfile();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
@@ -70,7 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     loading,
   };
 
-  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
 export const useAuth = () => {
