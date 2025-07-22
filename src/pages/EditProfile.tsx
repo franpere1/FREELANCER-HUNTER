@@ -12,6 +12,7 @@ import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils'; // Importar la utilidad cn
 
 const editProfileSchema = z.object({
   name: z.string().min(2, { message: 'El nombre es requerido' }),
@@ -198,6 +199,7 @@ const EditProfile = () => {
                   type="file"
                   accept="image/*"
                   {...register('profile_image_file')}
+                  className={cn(errors.profile_image_file && "border-red-500")}
                 />
                 {errors.profile_image_file && <p className="text-red-500 text-xs mt-1">{errors.profile_image_file.message}</p>}
               </div>
@@ -206,12 +208,12 @@ const EditProfile = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Nombre Completo</Label>
-                <Input id="name" {...register('name')} />
+                <Input id="name" {...register('name')} className={cn(errors.name && "border-red-500")} />
                 {errors.name && <p className="text-red-500 text-sm font-semibold mt-1">{errors.name.message}</p>}
               </div>
               <div>
                 <Label htmlFor="phone">Teléfono</Label>
-                <Input id="phone" {...register('phone')} />
+                <Input id="phone" {...register('phone')} className={cn(errors.phone && "border-red-500")} />
                 {errors.phone && <p className="text-red-500 text-sm font-semibold mt-1">{errors.phone.message}</p>}
               </div>
             </div>
@@ -221,17 +223,17 @@ const EditProfile = () => {
                 <h3 className="text-lg font-medium">Información de Proveedor</h3>
                 <div>
                   <Label htmlFor="skill">Oficio o Habilidad</Label>
-                  <Input id="skill" {...register('skill')} />
+                  <Input id="skill" {...register('skill')} className={cn(errors.skill && "border-red-500")} />
                   {errors.skill && <p className="text-red-500 text-sm font-semibold mt-1">{errors.skill.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor="service_description">Descripción del Servicio</Label>
-                  <Textarea id="service_description" {...register('service_description')} />
+                  <Textarea id="service_description" {...register('service_description')} className={cn(errors.service_description && "border-red-500")} />
                   {errors.service_description && <p className="text-red-500 text-sm font-semibold mt-1">{errors.service_description.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor="rate">Costo Aproximado del Servicio (BCV)</Label>
-                  <Input id="rate" type="number" step="0.01" {...register('rate')} />
+                  <Input id="rate" type="number" step="0.01" {...register('rate')} className={cn(errors.rate && "border-red-500")} />
                   {errors.rate && <p className="text-red-500 text-sm font-semibold mt-1">{errors.rate.message}</p>}
                 </div>
                 <div className="flex items-center space-x-4">
@@ -245,6 +247,7 @@ const EditProfile = () => {
                       type="file"
                       accept="image/*"
                       {...register('service_image_file')}
+                      className={cn(errors.service_image_file && "border-red-500")}
                     />
                     {errors.service_image_file && <p className="text-red-500 text-xs mt-1">{errors.service_image_file.message}</p>}
                   </div>
