@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+import { Button }mp; from '@/components/ui/button';
 import { Star, Phone, Mail } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
@@ -81,8 +81,8 @@ const ProviderDetail = () => {
         feedbackGiven = data.feedback?.some((fb: any) => fb.clientId === user.id) || false;
       }
 
-      // Contact is visible if it's unlocked in DB AND feedback has NOT been given for this unlock cycle
-      setIsContactVisible(unlockedFromDB && !feedbackGiven); // <--- REVERTIDO A LA LÓGICA ORIGINAL
+      // Contact is visible if it's unlocked in DB. The feedback status only affects the feedback button.
+      setIsContactVisible(unlockedFromDB); // <--- CAMBIO CLAVE AQUÍ: Eliminado '&& !feedbackGiven'
       setHasSubmittedFeedback(feedbackGiven);
     }
     setLoading(false);
