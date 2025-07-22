@@ -5,9 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Star, MessageSquare } from 'lucide-react';
+import { Edit, Star } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import LatestProviders from '@/components/LatestProviders';
 import BuyTokensDialog from '@/components/BuyTokensDialog';
 import FeedbackDialog from '@/components/FeedbackDialog';
@@ -35,8 +35,23 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  const fetchActiveContacts = useCallback(async () => {
-    if (profile && profile.type === 'client') {
+  useEffect(() => {
+    if (!profile) return;
+
+    const fetchClientData = async () => {
+      // Fetch latest providers
+      setProvidersLoading(true);
+      const { data: providersData, error: providersError } = await supabase
+        .from('profiles')
+        .select('id, name, skill, rate, profile_image, star_rating')
+        .eq('type', 'provider')
+        .order('created_at', { ascending: false })
+        .limit(5);
+      if (providersError) console.error("Error fetching latest providers:", providersError);
+      else setLatestProviders(providersData || []);
+      setProvidersLoading(false);
+
+      // Fetch active contacts
       setActiveContactsLoading(true);
       const { data: unlockedData, error: unlockedError } = await supabase
         .from('unlocked_contacts')
@@ -49,81 +64,61 @@ const Dashboard = () => {
       } else {
         const providerIds = unlockedData.map(uc => uc.provider_id);
         if (providerIds.length > 0) {
-          const { data: providersData, error: providersError } = await supabase
+          const { data: providers, error } = await supabase
             .from('profiles')
             .select('id, name, skill, rate, profile_image, star_rating')
             .in('id', providerIds);
           
-          const contactsWithFeedbackStatus = providersData?.map(p => ({
-            ...p,
-            feedback_submitted: unlockedData.find(ud => ud.provider_id === p.id)?.feedback_submitted_for_this_unlock
-          }));
-
-          setActiveContacts(contactsWithFeedbackStatus || []);
+          if (error) {
+            console.error("Error fetching provider profiles for active contacts:", error);
+            setActiveContacts([]);
+          } else {
+            const contactsWithFeedbackStatus = providers?.map(p => ({
+              ...p,
+              feedback_submitted: unlockedData.find(ud => ud.provider_id === p.id)?.feedback_submitted_for_this_unlock
+            }));
+            setActiveContacts(contactsWithFeedbackStatus || []);
+          }
         } else {
           setActiveContacts([]);
         }
       }
       setActiveContactsLoading(false);
+    };
+
+    const fetchProviderData = async () => {
+      setClientsLoading(true);
+      const { data: unlockedData, error: unlockedError } = await supabase
+        .from('unlocked_contacts')
+        .select('client_id')
+        .eq('provider_id', profile.id);
+
+      if (unlockedError) {
+        console.error("Error fetching unlocked contacts for provider:", unlockedError);
+        setRequestingClients([]);
+      } else {
+        const clientIds = unlockedData.map(uc => uc.client_id);
+        if (clientIds.length > 0) {
+          const { data: clientsData, error: clientsError } = await supabase
+            .from('profiles')
+            .select('id, name, phone, email')
+            .in('id', clientIds);
+          if (clientsError) console.error("Error fetching requesting clients:", clientsError);
+          setRequestingClients(clientsData || []);
+        } else {
+          setRequestingClients([]);
+        }
+      }
+      setClientsLoading(false);
+    };
+
+    if (profile.type === 'client') {
+      fetchClientData();
+    } else if (profile.type === 'provider') {
+      fetchProviderData();
     }
   }, [profile]);
 
-  useEffect(() => {
-    const fetchLatestProviders = async () => {
-      if (profile && profile.type === 'client') {
-        setProvidersLoading(true);
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('id, name, skill, rate, profile_image, star_rating')
-          .eq('type', 'provider')
-          .order('created_at', { ascending: false })
-          .limit(5);
-
-        if (error) {
-          console.error("Error fetching latest providers:", error);
-        } else {
-          setLatestProviders(data || []);
-        }
-        setProvidersLoading(false);
-      }
-    };
-
-    const fetchRequestingClients = async () => {
-      if (profile && profile.type === 'provider') {
-        setClientsLoading(true);
-        const { data: unlockedData, error: unlockedError } = await supabase
-          .from('unlocked_contacts')
-          .select('client_id')
-          .eq('provider_id', profile.id);
-
-        if (unlockedError) {
-          console.error("Error fetching unlocked contacts:", unlockedError);
-          setRequestingClients([]);
-        } else {
-          const clientIds = unlockedData.map(uc => uc.client_id);
-          if (clientIds.length > 0) {
-            const { data: clientsData, error: clientsError } = await supabase
-              .from('profiles')
-              .select('id, name, phone, email')
-              .in('id', clientIds);
-            setRequestingClients(clientsData || []);
-          } else {
-            setRequestingClients([]);
-          }
-        }
-        setClientsLoading(false);
-      }
-    };
-
-    if (profile) {
-      if (profile.type === 'client') {
-        fetchLatestProviders();
-        fetchActiveContacts();
-      } else if (profile.type === 'provider') {
-        fetchRequestingClients();
-      }
-    }
-  }, [profile, fetchActiveContacts]);
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando...</div>;
@@ -154,7 +149,11 @@ const Dashboard = () => {
     showSuccess('¡Gracias por tu comentario!');
     setIsFeedbackDialogOpen(false);
     setSelectedProviderForFeedback(null);
-    fetchActiveContacts();
+    // Re-trigger fetch by refreshing profile
+    if (profile) {
+       // A bit of a hack to re-trigger the useEffect
+       refreshProfile();
+    }
   };
 
   return (
