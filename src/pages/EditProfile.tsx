@@ -158,7 +158,7 @@ const EditProfile = () => {
 
     } catch (error: any) {
       dismissToast(toastId);
-      showError(String((error as Error).message || 'Ocurrió un error al actualizar el perfil.')); // Casteo explícito
+      showError(String(error?.message || error || 'Ocurrió un error al actualizar el perfil.')); // Casteo explícito
     }
   };
 
