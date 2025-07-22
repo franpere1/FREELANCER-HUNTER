@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Edit, Star } from 'lucide-react'; // Importar el icono Star
+import { ScrollArea } from '@/components/ui/scroll-area'; // Importar ScrollArea
 
 const Dashboard = () => {
   const { profile, loading } = useAuth();
@@ -54,14 +55,21 @@ const Dashboard = () => {
       <Header />
       <main className="container mx-auto p-4 md:p-8">
         <Card className="max-w-2xl mx-auto">
-          <CardHeader>
-            <div className="flex items-center justify-between">
+          <CardHeader className="relative"> {/* Añadir relative para posicionar el botón */}
+            <div className="absolute top-4 right-4">
+              <Button variant="outline" size="icon" onClick={() => navigate('/edit-profile')}>
+                <Edit className="h-4 w-4" />
+                <span className="sr-only">Editar Perfil</span>
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {/* Columna Izquierda: Información del Perfil */}
               <div className="flex items-center space-x-4">
                 <Avatar className="h-16 w-16">
                   <AvatarImage src={profile.profile_image || undefined} alt={profile.name} />
                   <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col"> {/* Usar flex-col para apilar elementos */}
+                <div className="flex flex-col">
                   <CardTitle className="text-2xl">{profile.name}</CardTitle>
                   <p className="text-sm text-muted-foreground">{profile.email}</p>
                   {profile.type === 'provider' && (
@@ -76,10 +84,17 @@ const Dashboard = () => {
                   )}
                 </div>
               </div>
-              <Button variant="outline" size="icon" onClick={() => navigate('/edit-profile')}>
-                <Edit className="h-4 w-4" />
-                <span className="sr-only">Editar Perfil</span>
-              </Button>
+
+              {/* Columna Derecha: Comentarios (solo para proveedores) */}
+              {profile.type === 'provider' && (
+                <div className="flex flex-col items-start md:justify-self-end md:mt-0 mt-4">
+                  <p className="font-semibold mb-2">Comentarios</p>
+                  <ScrollArea className="h-32 w-full md:w-64 rounded-md border p-4">
+                    <p className="text-sm text-muted-foreground">No hay comentarios aún.</p>
+                    {/* Aquí se mostrarán los comentarios reales cuando estén disponibles */}
+                  </ScrollArea>
+                </div>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
