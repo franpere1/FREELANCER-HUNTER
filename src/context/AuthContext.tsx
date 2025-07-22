@@ -34,7 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true); // Single loading state
+  const [loading, setLoading] = useState(true);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
@@ -52,7 +52,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        const currentUser = session?.user;
+        setUser(currentUser ?? null);
+
+        if (currentUser) {
+          await fetchProfile(currentUser.id);
+        } else {
+          setProfile(null);
+        }
+      } catch (e) {
+        console.error("Error checking session:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     setLoading(true);
+    checkSession();
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       const currentUser = session?.user;
@@ -63,7 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setProfile(null);
       }
-      setLoading(false);
     });
 
     return () => {

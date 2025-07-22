@@ -76,80 +76,85 @@ const ProviderDetail = () => {
   useEffect(() => {
     const fetchDetails = async () => {
       setLoading(true);
-      setProvider(null);
-      setIsContactUnlocked(false);
-      setUnlockedContactRecord(null);
-      setRequestingClients([]);
-      setClientsLoading(true);
+      try {
+        setProvider(null);
+        setIsContactUnlocked(false);
+        setUnlockedContactRecord(null);
+        setRequestingClients([]);
+        setClientsLoading(true);
 
-      if (!id || !user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data: providerData, error: providerError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (providerError) {
-        console.error("Error fetching provider:", providerError);
-        showError('Error al cargar la información del proveedor.');
-        setLoading(false);
-        return;
-      }
-      setProvider(providerData);
-
-      if (user.id === providerData.id) {
-        const { data: unlockedData, error: unlockedError } = await supabase
-          .from('unlocked_contacts')
-          .select('client_id')
-          .eq('provider_id', providerData.id)
-          .eq('feedback_submitted_for_this_unlock', false);
-
-        if (!unlockedError && unlockedData && unlockedData.length > 0) {
-          const clientIds = unlockedData.map(uc => uc.client_id);
-          const { data: clientsData, error: clientsError } = await supabase
-            .from('profiles')
-            .select('id, name, phone, email')
-            .in('id', clientIds);
-          
-          const { data: unreadData } = await supabase
-            .from('messages')
-            .select('sender_id')
-            .eq('receiver_id', user.id)
-            .in('sender_id', clientIds)
-            .not('read_by', 'cs', `{${user.id}}`);
-            
-          const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
-
-          if (clientsError || !clientsData) {
-            setRequestingClients([]);
-          } else {
-            const clientsWithStatus = clientsData.map(c => ({
-              ...c,
-              hasUnreadMessages: unreadSenders.has(c.id),
-            }));
-            setRequestingClients(clientsWithStatus);
-          }
+        if (!id || !user) {
+          return;
         }
-        setClientsLoading(false);
-      } else if (clientProfile && clientProfile.type === 'client') {
-        const { data: unlockedContact, error: unlockedError } = await supabase
-          .from('unlocked_contacts')
+
+        const { data: providerData, error: providerError } = await supabase
+          .from('profiles')
           .select('*')
-          .eq('client_id', user.id)
-          .eq('provider_id', id)
-          .eq('feedback_submitted_for_this_unlock', false)
+          .eq('id', id)
           .single();
 
-        if (unlockedContact && !unlockedError) {
-          setUnlockedContactRecord(unlockedContact);
-          setIsContactUnlocked(true);
+        if (providerError) {
+          console.error("Error fetching provider:", providerError);
+          showError('Error al cargar la información del proveedor.');
+          return;
         }
+        setProvider(providerData);
+
+        if (user.id === providerData.id) {
+          setClientsLoading(true);
+          const { data: unlockedData, error: unlockedError } = await supabase
+            .from('unlocked_contacts')
+            .select('client_id')
+            .eq('provider_id', providerData.id)
+            .eq('feedback_submitted_for_this_unlock', false);
+
+          if (!unlockedError && unlockedData && unlockedData.length > 0) {
+            const clientIds = unlockedData.map(uc => uc.client_id);
+            const { data: clientsData, error: clientsError } = await supabase
+              .from('profiles')
+              .select('id, name, phone, email')
+              .in('id', clientIds);
+            
+            const { data: unreadData } = await supabase
+              .from('messages')
+              .select('sender_id')
+              .eq('receiver_id', user.id)
+              .in('sender_id', clientIds)
+              .not('read_by', 'cs', `{${user.id}}`);
+              
+            const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
+
+            if (clientsError || !clientsData) {
+              setRequestingClients([]);
+            } else {
+              const clientsWithStatus = clientsData.map(c => ({
+                ...c,
+                hasUnreadMessages: unreadSenders.has(c.id),
+              }));
+              setRequestingClients(clientsWithStatus);
+            }
+          }
+          setClientsLoading(false);
+        } else if (clientProfile && clientProfile.type === 'client') {
+          const { data: unlockedContact, error: unlockedError } = await supabase
+            .from('unlocked_contacts')
+            .select('*')
+            .eq('client_id', user.id)
+            .eq('provider_id', id)
+            .eq('feedback_submitted_for_this_unlock', false)
+            .single();
+
+          if (unlockedContact && !unlockedError) {
+            setUnlockedContactRecord(unlockedContact);
+            setIsContactUnlocked(true);
+          }
+        }
+      } catch (error) {
+        console.error("An unexpected error occurred in fetchDetails:", error);
+        showError("Ocurrió un error inesperado al cargar los detalles.");
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     if (!authLoading) {

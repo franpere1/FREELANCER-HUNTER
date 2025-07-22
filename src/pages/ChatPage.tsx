@@ -48,91 +48,93 @@ const ChatPage = () => {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || !otherUserId) {
-      setLoading(false);
-      return;
-    }
-
+    
     const initializeChat = async () => {
       setLoading(true);
-
-      // Check for an ACTIVE connection where feedback has NOT been submitted
-      const { data: connection, error: connectionError } = await supabase
-        .from('unlocked_contacts')
-        .select('id')
-        .or(`and(client_id.eq.${user.id},provider_id.eq.${otherUserId}),and(client_id.eq.${otherUserId},provider_id.eq.${user.id})`)
-        .eq('feedback_submitted_for_this_unlock', false) // CRUCIAL: Ensure the connection is active
-        .limit(1)
-        .single();
-
-      if (connectionError || !connection) {
-        showError("No tienes permiso para chatear con este usuario. El contacto debe ser desbloqueado primero.");
-        navigate('/dashboard');
-        return;
-      }
-      
-      setIsConnectionActive(true);
-
-      const { data: otherUserData, error: otherUserError } = await supabase
-        .from('profiles')
-        .select('id, name, profile_image')
-        .eq('id', otherUserId)
-        .single();
-      
-      if (otherUserError) {
-        console.error("Error fetching other user:", otherUserError);
-        showError("No se pudo cargar la información del otro usuario.");
-        navigate(-1);
-        return;
-      }
-      setOtherUser(otherUserData);
-
-      const { data: messagesData, error: messagesError } = await supabase
-        .from('messages')
-        .select('*')
-        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
-        .order('timestamp', { ascending: true });
-
-      if (messagesError) {
-        console.error("Error fetching messages:", messagesError);
-      } else {
-        setMessages(messagesData as Message[]);
-        const unreadMessageIds = messagesData
-          .filter(msg => msg.receiver_id === user.id && !msg.read_by?.includes(user.id))
-          .map(msg => msg.id);
-
-        if (unreadMessageIds.length > 0) {
-          supabase
-            .rpc('mark_messages_as_read', { message_ids: unreadMessageIds, user_id: user.id })
-            .then(({ error }) => {
-              if (error) {
-                console.error("Error marking messages as read:", error);
-              } else {
-                refreshProfile(); // Refresh context to update indicators elsewhere
-              }
-            });
+      try {
+        if (!user || !otherUserId) {
+          return;
         }
+
+        const { data: connection, error: connectionError } = await supabase
+          .from('unlocked_contacts')
+          .select('id')
+          .or(`and(client_id.eq.${user.id},provider_id.eq.${otherUserId}),and(client_id.eq.${otherUserId},provider_id.eq.${user.id})`)
+          .eq('feedback_submitted_for_this_unlock', false)
+          .limit(1)
+          .single();
+
+        if (connectionError || !connection) {
+          showError("No tienes permiso para chatear con este usuario. El contacto debe ser desbloqueado primero.");
+          navigate('/dashboard');
+          return;
+        }
+        
+        setIsConnectionActive(true);
+
+        const { data: otherUserData, error: otherUserError } = await supabase
+          .from('profiles')
+          .select('id, name, profile_image')
+          .eq('id', otherUserId)
+          .single();
+        
+        if (otherUserError) {
+          console.error("Error fetching other user:", otherUserError);
+          showError("No se pudo cargar la información del otro usuario.");
+          navigate(-1);
+          return;
+        }
+        setOtherUser(otherUserData);
+
+        const { data: messagesData, error: messagesError } = await supabase
+          .from('messages')
+          .select('*')
+          .or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
+          .order('timestamp', { ascending: true });
+
+        if (messagesError) {
+          console.error("Error fetching messages:", messagesError);
+        } else {
+          setMessages(messagesData as Message[]);
+          const unreadMessageIds = messagesData
+            .filter(msg => msg.receiver_id === user.id && !msg.read_by?.includes(user.id))
+            .map(msg => msg.id);
+
+          if (unreadMessageIds.length > 0) {
+            supabase
+              .rpc('mark_messages_as_read', { message_ids: unreadMessageIds, user_id: user.id })
+              .then(({ error }) => {
+                if (error) {
+                  console.error("Error marking messages as read:", error);
+                } else {
+                  refreshProfile();
+                }
+              });
+          }
+        }
+      } catch (error) {
+        console.error("An unexpected error occurred in initializeChat:", error);
+        showError("Ocurrió un error inesperado al iniciar el chat.");
+      } finally {
+        setLoading(false);
       }
-      
-      setLoading(false);
     };
 
     initializeChat();
 
     const channel = supabase
-      .channel(`chat:${user.id}:${otherUserId}`)
+      .channel(`chat:${user?.id}:${otherUserId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'messages',
-          filter: `receiver_id=eq.${user.id}`,
+          filter: `receiver_id=eq.${user?.id}`,
         },
         (payload) => {
           if (payload.new.sender_id === otherUserId) {
             setMessages((prevMessages) => [...prevMessages, payload.new as Message]);
-            // Mark the new message as read immediately
             supabase
               .rpc('mark_messages_as_read', { message_ids: [payload.new.id], user_id: user.id })
               .then(({ error }) => {
