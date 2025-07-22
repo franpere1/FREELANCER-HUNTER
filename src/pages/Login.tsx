@@ -28,7 +28,7 @@ const Login = () => {
 
   useEffect(() => {
     if (session) {
-      navigate('/');
+      navigate('/dashboard');
     }
   }, [session, navigate]);
 
@@ -38,6 +38,7 @@ const Login = () => {
       showError('Credenciales inválidas. Por favor, inténtalo de nuevo.');
     } else {
       showSuccess('¡Inicio de sesión exitoso!');
+      navigate('/dashboard');
     }
   };
 
