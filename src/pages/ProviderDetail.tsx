@@ -36,8 +36,7 @@ const ProviderDetail = () => {
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isContactVisible, setIsContactVisible] = useState(false); // Controla si el contacto está visible (no difuminado)
-  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
-  const [hasSubmittedFeedback, setHasSubmittedFeedback] = useState(false); // Si el cliente actual ha enviado feedback
+  const [feedbackSubmittedForCurrentUnlock, setFeedbackSubmittedForCurrentUnlock] = useState(false); // Nuevo estado
 
   const fetchProviderAndUnlockStatus = useCallback(async () => {
     if (!id) {
@@ -59,31 +58,29 @@ const ProviderDetail = () => {
       showError('Error al cargar la información del proveedor.');
       setProvider(null);
       setIsContactVisible(false);
-      setHasSubmittedFeedback(false);
+      setFeedbackSubmittedForCurrentUnlock(false);
     } else {
       setProvider(data);
       let unlockedFromDB = false;
-      let feedbackGiven = false;
+      let feedbackSubmitted = false; // Usaremos esta variable para el nuevo estado
 
       if (clientProfile && clientProfile.type === 'client' && user) {
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
-          .select('id')
+          .select('id, feedback_submitted_for_this_unlock') // Obtener la nueva columna
           .eq('client_id', user.id)
           .eq('provider_id', id)
           .single();
 
         if (!unlockedError && unlockedData) {
           unlockedFromDB = true;
+          feedbackSubmitted = unlockedData.feedback_submitted_for_this_unlock; // Asignar el valor de la DB
         }
-
-        // Check if the current client has already given feedback
-        feedbackGiven = data.feedback?.some((fb: any) => fb.clientId === user.id) || false;
       }
 
-      // Contact is visible if it's unlocked in DB. The feedback status only affects the feedback button.
-      setIsContactVisible(unlockedFromDB); 
-      setHasSubmittedFeedback(feedbackGiven);
+      // El contacto es visible si está desbloqueado en la DB Y NO se ha enviado feedback para esta liberación
+      setIsContactVisible(unlockedFromDB && !feedbackSubmitted); 
+      setFeedbackSubmittedForCurrentUnlock(feedbackSubmitted); // Actualizar el estado local
     }
     setLoading(false);
   }, [id, user, clientProfile]);
@@ -117,20 +114,14 @@ const ProviderDetail = () => {
       }
 
       if (data === 'DESBLOQUEO EXITOSO') {
-        await refreshProfile(); // Refresh client's token balance
-        setIsContactVisible(true); // Set visible immediately
-        setHasSubmittedFeedback(false); // Reset feedback state for this new unlock cycle
+        await refreshProfile(); // Refrescar el saldo de tokens del cliente
+        // Después de la RPC, volver a obtener el estado para reflejar la actualización en la DB
+        await fetchProviderAndUnlockStatus(); 
         dismissToast(toastId);
         showSuccess('¡Información de contacto desbloqueada con éxito!');
-        // No es necesario llamar a fetchProviderAndUnlockStatus aquí, ya que hemos actualizado el estado optimísticamente.
-        // La próxima vez que fetchProviderAndUnlockStatus se ejecute (por ejemplo, al volver a montar el componente o al refrescar explícitamente),
-        // reevaluará basándose en la base de datos, pero la UX inmediata ya está manejada.
       } else if (data === 'CONTACTO YA DESBLOQUEADO') {
-        // Esto significa que ya estaba desbloqueado Y no se había dado feedback.
-        // Por lo tanto, debería permanecer visible y el botón de feedback debería estar disponible.
-        // Aún necesitamos obtener el estado más reciente para asegurar la consistencia.
-        await refreshProfile(); // Refresh client's token balance
-        await fetchProviderAndUnlockStatus(); // Esto establecerá correctamente isContactVisible y hasSubmittedFeedback
+        await refreshProfile();
+        await fetchProviderAndUnlockStatus(); // Volver a obtener para asegurar la consistencia de la UI
         dismissToast(toastId);
         showSuccess('La información de contacto ya está desbloqueada.');
       } else {
@@ -144,13 +135,10 @@ const ProviderDetail = () => {
   };
 
   const handleFeedbackSubmitted = () => {
-    // Después de enviar feedback, el contacto debería volver a difuminarse, y el botón de desbloqueo debería reaparecer.
-    // Esto se debe a que el usuario ha "usado" este desbloqueo al proporcionar feedback.
-    setIsContactVisible(false); 
-    setHasSubmittedFeedback(true); 
+    // La función RPC `add_feedback` ahora actualiza `feedback_submitted_for_this_unlock` a TRUE.
+    // Solo necesitamos volver a obtener los datos del proveedor y el estado de desbloqueo para reflejar este cambio.
     setIsFeedbackDialogOpen(false); // Cerrar el diálogo
-    // Volver a obtener los datos del proveedor para actualizar la lista de feedback, la calificación por estrellas y reevaluar el estado de desbloqueo.
-    fetchProviderAndUnlockStatus(); 
+    fetchProviderAndUnlockStatus(); // Esto reevaluará isContactVisible y feedbackSubmittedForCurrentUnlock
   };
 
   if (loading || authLoading) {
@@ -182,8 +170,8 @@ const ProviderDetail = () => {
   const showBlurred = isClient && !isContactVisible; 
   // El botón de desbloqueo se muestra si es un cliente Y el contacto no está visible actualmente
   const canUnlock = isClient && !isContactVisible; 
-  // El botón de feedback se muestra si es un cliente Y el contacto está visible Y no se ha enviado feedback para este ciclo de desbloqueo
-  const canGiveFeedback = isClient && isContactVisible && !hasSubmittedFeedback; 
+  // El botón de feedback se muestra si es un cliente Y el contacto está visible Y NO se ha enviado feedback para esta liberación
+  const canGiveFeedback = isClient && isContactVisible && !feedbackSubmittedForCurrentUnlock; 
 
   return (
     <div className="min-h-screen bg-gray-50">
