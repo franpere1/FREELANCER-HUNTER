@@ -109,7 +109,6 @@ const EditProfile = () => {
         name: data.name,
         phone: data.phone,
         profile_image: profileImageUrl,
-        updated_at: new Date(),
       };
 
       if (profile.type === 'provider') {
