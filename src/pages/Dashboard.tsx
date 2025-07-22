@@ -55,7 +55,7 @@ const Dashboard = () => {
       <Header />
       <main className="container mx-auto p-4 md:p-8">
         <Card className="max-w-2xl mx-auto">
-          <CardHeader className="relative"> {/* Añadir relative para posicionar el botón */}
+          <CardHeader className="relative">
             <div className="absolute top-4 right-4">
               <Button variant="outline" size="icon" onClick={() => navigate('/edit-profile')}>
                 <Edit className="h-4 w-4" />
@@ -70,7 +70,12 @@ const Dashboard = () => {
                   <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <CardTitle className="text-2xl">{profile.name}</CardTitle>
+                  <CardTitle className="text-2xl flex items-center space-x-2"> {/* Añadido flex para alinear */}
+                    <span>{profile.name}</span>
+                    {profile.type === 'client' && (
+                      <span className="text-blue-600 text-base font-semibold">TOKEN</span>
+                    )}
+                  </CardTitle>
                   <p className="text-sm text-muted-foreground">{profile.email}</p>
                   {profile.type === 'provider' && (
                     <div className="flex flex-col items-start mt-2">
@@ -103,7 +108,6 @@ const Dashboard = () => {
                 <p className="font-semibold">Tipo de Cuenta</p>
                 <p className="capitalize">
                   {profile.type}
-                  {profile.type === 'client' && ' TOKEN'} {/* Añadir ' TOKEN' si es cliente */}
                 </p>
               </div>
               <div>
