@@ -9,12 +9,14 @@ import { Edit, Star } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEffect, useState } from 'react';
 import LatestProviders from '@/components/LatestProviders';
+import BuyTokensDialog from '@/components/BuyTokensDialog'; // Importar el nuevo componente
 
 const Dashboard = () => {
   const { profile, loading } = useAuth();
   const navigate = useNavigate();
   const [latestProviders, setLatestProviders] = useState<any[]>([]);
   const [providersLoading, setProvidersLoading] = useState(true);
+  const [isBuyTokensDialogOpen, setIsBuyTokensDialogOpen] = useState(false); // Estado para el diálogo
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -86,7 +88,9 @@ const Dashboard = () => {
             <CardHeader className="relative">
               <div className="absolute top-4 right-4 flex items-center space-x-2">
                 {profile.type === 'client' && (
-                  <span className="text-blue-600 text-base font-semibold">TOKEN</span>
+                  <span className="text-blue-600 text-base font-semibold">
+                    Tokens: {profile.token_balance !== null ? profile.token_balance : 0}
+                  </span>
                 )}
                 <Button variant="outline" size="icon" onClick={() => navigate('/edit-profile')}>
                   <Edit className="h-4 w-4" />
@@ -194,7 +198,7 @@ const Dashboard = () => {
                 <p className="text-center text-muted-foreground mb-4">
                   Desbloquea contactos de proveedores con tokens.
                 </p>
-                <Button className="w-full" onClick={() => console.log('Comprar Token clickeado')}>
+                <Button className="w-full" onClick={() => setIsBuyTokensDialogOpen(true)}>
                   Comprar Token
                 </Button>
               </CardContent>
@@ -206,6 +210,13 @@ const Dashboard = () => {
           <LatestProviders providers={latestProviders} isLoading={providersLoading} />
         )}
       </main>
+
+      {profile.type === 'client' && (
+        <BuyTokensDialog
+          isOpen={isBuyTokensDialogOpen}
+          onClose={() => setIsBuyTokensDialogOpen(false)}
+        />
+      )}
     </div>
   );
 };
