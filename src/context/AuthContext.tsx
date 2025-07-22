@@ -1,6 +1,7 @@
 import { createContext, useState, useEffect, useContext, ReactNode, useCallback, useMemo } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { showSuccess } from '@/utils/toast';
 
 interface Profile {
   id: string;
@@ -51,44 +52,64 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
+  // Effect for handling auth state changes
   useEffect(() => {
-    const initializeAuth = async () => {
-      // First, get the current session to handle the initial page load
-      const { data: { session: initialSession } } = await supabase.auth.getSession();
-      
-      if (initialSession?.user) {
-        await fetchProfile(initialSession.user.id);
-      }
-      
-      setSession(initialSession);
-      setUser(initialSession?.user ?? null);
-      
-      // We are done with the initial load
+    setLoading(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
       setLoading(false);
+    });
 
-      // Then, listen for subsequent auth changes
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-        const newCurrentUser = session?.user ?? null;
-        if (newCurrentUser) {
-          await fetchProfile(newCurrentUser.id);
-        } else {
-          setProfile(null);
-        }
-        setSession(session);
-        setUser(newCurrentUser);
-      });
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Effect for fetching profile and subscribing to realtime updates
+  useEffect(() => {
+    if (user) {
+      fetchProfile(user.id);
+
+      const profileChannel = supabase
+        .channel(`public:profiles:id=eq.${user.id}`)
+        .on<Profile>(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'profiles',
+            filter: `id=eq.${user.id}`,
+          },
+          (payload) => {
+            setProfile((currentProfile) => {
+              const oldFeedbackCount = currentProfile?.feedback?.length ?? 0;
+              const newFeedbackCount = (payload.new.feedback as any[])?.length ?? 0;
+
+              if (newFeedbackCount > oldFeedbackCount) {
+                  showSuccess('¡Has recibido un nuevo comentario!');
+              }
+              
+              if (currentProfile) {
+                return { ...currentProfile, ...payload.new };
+              }
+              return payload.new as Profile;
+            });
+          }
+        )
+        .subscribe();
 
       return () => {
-        subscription.unsubscribe();
+        supabase.removeChannel(profileChannel);
       };
-    };
-
-    const unsubscribePromise = initializeAuth();
-
-    return () => {
-      unsubscribePromise.then(cleanup => cleanup && cleanup());
-    };
-  }, [fetchProfile]);
+    } else {
+      setProfile(null);
+    }
+  }, [user, fetchProfile]);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
