@@ -10,6 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils'; // Importar la utilidad cn
+import FeedbackDialog from '@/components/FeedbackDialog'; // Importar el nuevo componente
 
 interface ProviderProfile {
   id: string;
@@ -35,47 +36,48 @@ const ProviderDetail = () => {
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isContactUnlocked, setIsContactUnlocked] = useState(false);
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false); // Nuevo estado para el diálogo de feedback
 
-  useEffect(() => {
-    const fetchProviderAndUnlockStatus = async () => {
-      if (!id) {
-        showError('ID de proveedor no encontrado.');
-        setLoading(false);
-        return;
-      }
+  const fetchProviderAndUnlockStatus = async () => {
+    if (!id) {
+      showError('ID de proveedor no encontrado.');
+      setLoading(false);
+      return;
+    }
 
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-      if (error) {
-        console.error("Error fetching provider:", error);
-        showError('Error al cargar la información del proveedor.');
-        setProvider(null);
-      } else {
-        setProvider(data);
-        // Check if contact is already unlocked for the current client
-        if (clientProfile && clientProfile.type === 'client' && user) {
-          const { data: unlockedData, error: unlockedError } = await supabase
-            .from('unlocked_contacts')
-            .select('id')
-            .eq('client_id', user.id)
-            .eq('provider_id', id)
-            .single();
+    if (error) {
+      console.error("Error fetching provider:", error);
+      showError('Error al cargar la información del proveedor.');
+      setProvider(null);
+    } else {
+      setProvider(data);
+      // Check if contact is already unlocked for the current client
+      if (clientProfile && clientProfile.type === 'client' && user) {
+        const { data: unlockedData, error: unlockedError } = await supabase
+          .from('unlocked_contacts')
+          .select('id')
+          .eq('client_id', user.id)
+          .eq('provider_id', id)
+          .single();
 
-          if (!unlockedError && unlockedData) {
-            setIsContactUnlocked(true);
-          } else {
-            setIsContactUnlocked(false);
-          }
+        if (!unlockedError && unlockedData) {
+          setIsContactUnlocked(true);
+        } else {
+          setIsContactUnlocked(false);
         }
       }
-      setLoading(false);
-    };
+    }
+    setLoading(false);
+  };
 
+  useEffect(() => {
     fetchProviderAndUnlockStatus();
   }, [id, user, clientProfile]); // Dependencias actualizadas
 
@@ -222,6 +224,14 @@ const ProviderDetail = () => {
               </div>
             )}
 
+            {isContactUnlocked && isClient && ( // Mostrar el botón de calificar si el contacto está desbloqueado y es un cliente
+              <div className="text-center pt-4 border-t">
+                <Button onClick={() => setIsFeedbackDialogOpen(true)} className="w-full md:w-auto">
+                  Calificar Proveedor
+                </Button>
+              </div>
+            )}
+
             <div className="space-y-2 pt-4 border-t">
               <p className="font-semibold text-gray-700">Descripción del Servicio</p>
               <p className="text-muted-foreground leading-relaxed">{provider.service_description || 'No hay descripción de servicio disponible.'}</p>
@@ -254,6 +264,16 @@ const ProviderDetail = () => {
           </CardContent>
         </Card>
       </main>
+
+      {isClient && user && ( // Renderizar el diálogo de feedback solo si es un cliente y el usuario existe
+        <FeedbackDialog
+          isOpen={isFeedbackDialogOpen}
+          onClose={() => setIsFeedbackDialogOpen(false)}
+          providerId={provider.id}
+          clientId={user.id}
+          onFeedbackSubmitted={fetchProviderAndUnlockStatus} // Para refrescar los comentarios y la calificación
+        />
+      )}
     </div>
   );
 };
