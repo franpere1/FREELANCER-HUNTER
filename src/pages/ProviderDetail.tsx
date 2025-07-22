@@ -116,11 +116,24 @@ const ProviderDetail = () => {
         throw error;
       }
 
-      if (data === 'DESBLOQUEO EXITOSO' || data === 'CONTACTO YA DESBLOQUEADO') {
+      if (data === 'DESBLOQUEO EXITOSO') {
         await refreshProfile(); // Refresh client's token balance
-        await fetchProviderAndUnlockStatus(); // Re-fetch provider data and unlock status to ensure UI consistency
+        setIsContactVisible(true); // <--- Establecer visible inmediatamente
+        setHasSubmittedFeedback(false); // <--- Reiniciar el estado de feedback para este nuevo ciclo de desbloqueo
         dismissToast(toastId);
         showSuccess('¡Información de contacto desbloqueada con éxito!');
+        // No es estrictamente necesario llamar a fetchProviderAndUnlockStatus aquí para la visibilidad,
+        // ya que la hemos establecido directamente. Se llamará en el siguiente render o si otros estados cambian.
+        // Sin embargo, la mantenemos para asegurar que todos los datos estén frescos, incluyendo los comentarios del proveedor.
+        await fetchProviderAndUnlockStatus(); 
+      } else if (data === 'CONTACTO YA DESBLOQUEADO') {
+        // Si ya estaba desbloqueado, aún queremos mostrarlo como visible.
+        // fetchProviderAndUnlockStatus se encargará de determinar si debe ser visible
+        // basándose en si ya se ha dado feedback.
+        await refreshProfile(); // Refresh client's token balance
+        await fetchProviderAndUnlockStatus(); // Esto establecerá correctamente isContactVisible y hasSubmittedFeedback
+        dismissToast(toastId);
+        showSuccess('La información de contacto ya está desbloqueada.');
       } else {
         throw new Error('Respuesta inesperada del servidor.');
       }
@@ -132,9 +145,12 @@ const ProviderDetail = () => {
   };
 
   const handleFeedbackSubmitted = () => {
-    // After feedback, re-fetch provider data to update feedback list, star rating, and re-evaluate unlock status
+    // Inmediatamente difuminar el contacto y marcar el feedback como enviado para una respuesta rápida de la UI
+    setIsContactVisible(false); 
+    setHasSubmittedFeedback(true); 
+    setIsFeedbackDialogOpen(false); // Cerrar el diálogo
+    // Luego, volver a obtener los datos del proveedor para actualizar la lista de feedback, la calificación por estrellas y reevaluar el estado de desbloqueo
     fetchProviderAndUnlockStatus(); 
-    setIsFeedbackDialogOpen(false); // Close the dialog
   };
 
   if (loading || authLoading) {
@@ -162,11 +178,11 @@ const ProviderDetail = () => {
   }
 
   const isClient = clientProfile?.type === 'client';
-  // Contact is blurred if it's a client AND it's not currently visible
+  // El contacto se difumina si es un cliente Y no está visible actualmente
   const showBlurred = isClient && !isContactVisible; 
-  // Unlock button is shown if it's a client AND contact is not currently visible
+  // El botón de desbloqueo se muestra si es un cliente Y el contacto no está visible actualmente
   const canUnlock = isClient && !isContactVisible; 
-  // Feedback button is shown if it's a client AND contact is visible AND feedback hasn't been submitted
+  // El botón de feedback se muestra si es un cliente Y el contacto está visible Y no se ha enviado feedback
   const canGiveFeedback = isClient && isContactVisible && !hasSubmittedFeedback; 
 
   return (
