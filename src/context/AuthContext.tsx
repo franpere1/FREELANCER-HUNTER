@@ -10,6 +10,7 @@ interface Profile {
   phone: string;
   type: 'client' | 'provider';
   category: string | null;
+  skill: string | null;
   service_description: string | null;
   profile_image: string | null;
 }

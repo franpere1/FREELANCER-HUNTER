@@ -86,6 +86,10 @@ const Dashboard = () => {
                   <p>{profile.category}</p>
                 </div>
                 <div>
+                  <p className="font-semibold">Oficio o Habilidad</p>
+                  <p>{profile.skill}</p>
+                </div>
+                <div>
                   <p className="font-semibold">Descripción del Servicio</p>
                   <p className="text-muted-foreground">{profile.service_description}</p>
                 </div>

@@ -27,6 +27,7 @@ const baseSchema = z.object({
 const clientSchema = baseSchema;
 const providerSchema = baseSchema.extend({
   category: z.string({ required_error: 'Seleccione una categoría' }),
+  skill: z.string().min(2, { message: 'El oficio o habilidad es requerido' }),
   service_description: z.string().min(10, { message: 'La descripción es muy corta' }),
 });
 
@@ -157,6 +158,11 @@ const SignUpForm = ({ type, onSubmit, register, errors, setValue }: any) => (
                   </SelectContent>
                 </Select>
                 {errors.category && <p className="text-red-500 text-xs mt-1">{errors.category.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="skill">Oficio o Habilidad</Label>
+                <Input id="skill" {...register('skill')} />
+                {errors.skill && <p className="text-red-500 text-xs mt-1">{errors.skill.message}</p>}
               </div>
               <div>
                 <Label htmlFor="service_description">Descripción del Servicio</Label>
