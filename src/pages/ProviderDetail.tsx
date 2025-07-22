@@ -41,7 +41,7 @@ const ProviderDetail = () => {
 
   const fetchProviderAndUnlockStatus = useCallback(async () => {
     if (!id) {
-      showError(String('ID de proveedor no encontrado.'));
+      showError('ID de proveedor no encontrado.');
       setLoading(false);
       return;
     }
@@ -56,7 +56,7 @@ const ProviderDetail = () => {
 
     if (error) {
       console.error("Error fetching provider:", error);
-      showError(String('Error al cargar la información del proveedor.'));
+      showError('Error al cargar la información del proveedor.');
       setProvider(null);
       setIsContactVisible(false);
       setFeedbackSubmittedForCurrentUnlock(false);
@@ -96,11 +96,11 @@ const ProviderDetail = () => {
 
   const handleUnlockContact = async () => {
     if (!user || !clientProfile || clientProfile.type !== 'client') {
-      showError(String('Debes ser un cliente para desbloquear contactos.'));
+      showError('Debes ser un cliente para desbloquear contactos.');
       return;
     }
     if (!id) {
-      showError(String('ID de proveedor no encontrado.'));
+      showError('ID de proveedor no encontrado.');
       return;
     }
 
@@ -129,7 +129,7 @@ const ProviderDetail = () => {
     } catch (err: any) {
       dismissToast(toastId);
       console.error('Error al desbloquear contacto:', err);
-      showError(String(err?.message || err || 'Ocurrió un error al desbloquear la información.')); // Casteo explícito
+      showError(String((err as Error)?.message || err || 'Ocurrió un error al desbloquear la información.')); // Casteo explícito
     }
   };
 
@@ -234,7 +234,7 @@ const ProviderDetail = () => {
                   Liberar información de contacto (1 Token)
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Tu saldo actual: {clientProfile?.token_balance?.toString() || '0'} Tokens
+                  Tu saldo actual: {`${clientProfile?.token_balance ?? '0'}`} Tokens
                 </p>
               </div>
             )}
