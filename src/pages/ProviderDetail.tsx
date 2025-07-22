@@ -81,8 +81,8 @@ const ProviderDetail = () => {
         feedbackGiven = data.feedback?.some((fb: any) => fb.clientId === user.id) || false;
       }
 
-      // Contact is visible if it's unlocked in DB. The feedback status only affects the feedback button.
-      setIsContactVisible(unlockedFromDB); // <--- CAMBIO CLAVE AQUÍ
+      // Contact is visible if it's unlocked in DB AND feedback has NOT been given for this unlock cycle
+      setIsContactVisible(unlockedFromDB && !feedbackGiven); // <--- REVERTIDO A LA LÓGICA ORIGINAL
       setHasSubmittedFeedback(feedbackGiven);
     }
     setLoading(false);
