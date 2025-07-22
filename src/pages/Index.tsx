@@ -21,11 +21,18 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800 relative py-12">
-      <div className="absolute top-4 right-4">
-        <Link to="/login">
-          <Button>Inicio / Registro</Button>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800 relative pt-24 pb-12">
+      {/* Header Bar */}
+      <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center">
+        <Link to="/" className="flex items-center space-x-3">
+          <Briefcase className="h-8 w-8 text-indigo-600" />
+          <span className="font-bold text-xl text-indigo-700">FREELANCER HUNTER</span>
         </Link>
+        <div>
+          <Link to="/login">
+            <Button>Inicio / Registro</Button>
+          </Link>
+        </div>
       </div>
       
       <div className="text-center mb-16 px-4">
