@@ -239,7 +239,7 @@ const EditProfile = () => {
                 </div>
                 <div>
                   <Label htmlFor="rate">Costo Aproximado del Servicio (BCV)</Label>
-                  <Input id="rate" type="number" step="0.01" {...register('rate')} className={cn(errors.rate && "border-red-500")} />
+                  <Input id="rate" type="number" step="0.01" {...register('rate')} value={watch('rate')?.toString() ?? ''} className={cn(errors.rate && "border-red-500")} />
                   {errors.rate && <p className="text-red-500 text-sm font-semibold mt-1">{errors.rate.message}</p>}
                 </div>
                 <div className="flex items-center space-x-4">

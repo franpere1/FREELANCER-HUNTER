@@ -234,7 +234,7 @@ const ProviderDetail = () => {
                   Liberar información de contacto (1 Token)
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Tu saldo actual: {`${clientProfile?.token_balance !== null ? clientProfile?.token_balance : 0}`} Tokens
+                  Tu saldo actual: {clientProfile?.token_balance?.toString() || '0'} Tokens
                 </p>
               </div>
             )}
