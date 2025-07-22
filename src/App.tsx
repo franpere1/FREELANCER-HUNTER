@@ -11,7 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import EditProfile from "./pages/EditProfile";
-import ProviderDetail from "./pages/ProviderDetail"; // Importar el nuevo componente
+import ProviderDetail from "./pages/ProviderDetail";
 
 const queryClient = new QueryClient();
 
@@ -30,7 +30,7 @@ const App = () => (
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/edit-profile" element={<EditProfile />} />
-              <Route path="/provider/:id" element={<ProviderDetail />} /> {/* Nueva ruta */}
+              <Route path="/provider/:id" element={<ProviderDetail />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

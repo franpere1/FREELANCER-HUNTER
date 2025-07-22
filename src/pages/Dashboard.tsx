@@ -5,19 +5,11 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Star, Phone, Mail } from 'lucide-react';
+import { Edit, Star } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEffect, useState } from 'react';
 import LatestProviders from '@/components/LatestProviders';
 import BuyTokensDialog from '@/components/BuyTokensDialog';
-
-interface UnlockedClient {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  profile_image: string | null;
-}
 
 const Dashboard = () => {
   const { profile, loading } = useAuth();
@@ -25,8 +17,6 @@ const Dashboard = () => {
   const [latestProviders, setLatestProviders] = useState<any[]>([]);
   const [providersLoading, setProvidersLoading] = useState(true);
   const [isBuyTokensDialogOpen, setIsBuyTokensDialogOpen] = useState(false);
-  const [unlockedClients, setUnlockedClients] = useState<UnlockedClient[]>([]);
-  const [unlockedClientsLoading, setUnlockedClientsLoading] = useState(true);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -53,45 +43,7 @@ const Dashboard = () => {
       }
     };
 
-    const fetchUnlockedClients = async () => {
-      if (profile && profile.type === 'provider' && profile.id) {
-        setUnlockedClientsLoading(true);
-        const { data: unlockedData, error: unlockedError } = await supabase
-          .from('unlocked_contacts')
-          .select('client_id')
-          .eq('provider_id', profile.id)
-          .eq('feedback_submitted_for_this_unlock', false);
-
-        if (unlockedError) {
-          console.error("Error fetching unlocked contacts:", unlockedError);
-          setUnlockedClients([]);
-          setUnlockedClientsLoading(false);
-          return;
-        }
-
-        const clientIds = unlockedData.map(item => item.client_id);
-
-        if (clientIds.length > 0) {
-          const { data: clientProfiles, error: profilesError } = await supabase
-            .from('profiles')
-            .select('id, name, email, phone, profile_image')
-            .in('id', clientIds);
-
-          if (profilesError) {
-            console.error("Error fetching client profiles:", profilesError);
-            setUnlockedClients([]);
-          } else {
-            setUnlockedClients(clientProfiles || []);
-          }
-        } else {
-          setUnlockedClients([]);
-        }
-        setUnlockedClientsLoading(false);
-      }
-    };
-
     fetchLatestProviders();
-    fetchUnlockedClients();
   }, [profile]);
 
   if (loading) {
@@ -257,43 +209,6 @@ const Dashboard = () => {
                 <Button className="w-full" onClick={() => setIsBuyTokensDialogOpen(true)}>
                   Comprar Token
                 </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {profile.type === 'provider' && (
-            <Card className="md:col-span-1 flex flex-col">
-              <CardHeader>
-                <CardTitle>Solicitudes de Servicio</CardTitle>
-              </CardHeader>
-              <CardContent className="flex-grow">
-                {unlockedClientsLoading ? (
-                  <p>Cargando solicitudes...</p>
-                ) : unlockedClients.length === 0 ? (
-                  <p className="text-muted-foreground">Nadie ha desbloqueado tu contacto aún.</p>
-                ) : (
-                  <ScrollArea className="h-64 pr-4">
-                    <div className="space-y-4">
-                      {unlockedClients.map((client) => (
-                        <div key={client.id} className="flex items-center space-x-4 p-3 border rounded-md shadow-sm">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={client.profile_image || undefined} alt={client.name} />
-                            <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="font-semibold text-lg">{client.name}</p>
-                            <p className="text-sm text-muted-foreground flex items-center">
-                              <Phone className="h-4 w-4 mr-1" /> {client.phone}
-                            </p>
-                            <p className="text-sm text-muted-foreground flex items-center">
-                              <Mail className="h-4 w-4 mr-1" /> {client.email}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </ScrollArea>
-                )}
               </CardContent>
             </Card>
           )}

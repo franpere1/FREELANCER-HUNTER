@@ -1,16 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Star, Phone, Mail } from 'lucide-react';
+import { Star } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
-import { cn } from '@/lib/utils';
-import FeedbackDialog from '@/components/FeedbackDialog';
 
 interface ProviderProfile {
   id: string;
@@ -32,110 +30,42 @@ interface ProviderProfile {
 const ProviderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, profile: clientProfile, loading: authLoading, refreshProfile } = useAuth();
+  const { loading: authLoading } = useAuth();
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isContactVisible, setIsContactVisible] = useState(false);
-  const [feedbackSubmittedForCurrentUnlock, setFeedbackSubmittedForCurrentUnlock] = useState(false);
-  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
-
-  const fetchProviderAndUnlockStatus = useCallback(async () => {
-    if (!id) {
-      showError('ID de proveedor no encontrado.');
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-    
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error("Error fetching provider:", error);
-      showError('Error al cargar la información del proveedor.');
-      setProvider(null);
-      setIsContactVisible(false);
-      setFeedbackSubmittedForCurrentUnlock(false);
-    } else {
-      setProvider(data);
-      let unlockedFromDB = false;
-      let feedbackSubmitted = false;
-
-      if (clientProfile && clientProfile.type === 'client' && user) {
-        const { data: unlockedData, error: unlockedError } = await supabase
-          .from('unlocked_contacts')
-          .select('id, feedback_submitted_for_this_unlock')
-          .eq('client_id', user.id)
-          .eq('provider_id', id)
-          .single();
-
-        if (!unlockedError && unlockedData) {
-          unlockedFromDB = true;
-          feedbackSubmitted = unlockedData.feedback_submitted_for_this_unlock;
-        }
-      }
-
-      setIsContactVisible(unlockedFromDB && !feedbackSubmitted); 
-      setFeedbackSubmittedForCurrentUnlock(feedbackSubmitted);
-    }
-    setLoading(false);
-  }, [id, user, clientProfile]);
 
   useEffect(() => {
-    fetchProviderAndUnlockStatus();
-  }, [fetchProviderAndUnlockStatus]);
+    const fetchProvider = async () => {
+      if (!id) {
+        showError('ID de proveedor no encontrado.');
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching provider:", error);
+        showError('Error al cargar la información del proveedor.');
+        setProvider(null);
+      } else {
+        setProvider(data);
+      }
+      setLoading(false);
+    };
+
+    fetchProvider();
+  }, [id]);
 
   const getInitials = (name: string) => {
     if (!name) return '';
     return name.split(' ').map((n) => n[0]).join('');
-  };
-
-  const handleUnlockContact = async () => {
-    if (!user || !clientProfile || clientProfile.type !== 'client') {
-      showError('Debes ser un cliente para desbloquear contactos.');
-      return;
-    }
-    if (!id) {
-      showError('ID de proveedor no encontrado.');
-      return;
-    }
-
-    const toastId = showLoading('Desbloqueando información de contacto...');
-
-    try {
-      const { data, error } = await supabase.rpc('unlock_provider_contact', { provider_id_in: id });
-
-      if (error) {
-        throw error;
-      }
-
-      if (data === 'DESBLOQUEO EXITOSO') {
-        await refreshProfile();
-        await fetchProviderAndUnlockStatus(); 
-        dismissToast(toastId);
-        showSuccess('¡Información de contacto desbloqueada con éxito!');
-      } else if (data === 'CONTACTO YA DESBLOQUEADO') {
-        await refreshProfile();
-        await fetchProviderAndUnlockStatus();
-        dismissToast(toastId);
-        showSuccess('La información de contacto ya está desbloqueada.');
-      } else {
-        throw new Error('Respuesta inesperada del servidor.');
-      }
-    } catch (err: unknown) {
-      dismissToast(toastId);
-      console.error('Error al desbloquear contacto:', err);
-      showError(err instanceof Error ? err.message : String(err || 'Ocurrió un error al desbloquear la información.'));
-    }
-  };
-
-  const handleFeedbackSubmitted = () => {
-    setIsFeedbackDialogOpen(false);
-    fetchProviderAndUnlockStatus();
   };
 
   if (loading || authLoading) {
@@ -161,11 +91,6 @@ const ProviderDetail = () => {
       </div>
     );
   }
-
-  const isClient = clientProfile?.type === 'client';
-  const showBlurred = isClient && !isContactVisible; 
-  const canUnlock = isClient && !isContactVisible; 
-  const canGiveFeedback = isClient && isContactVisible && !feedbackSubmittedForCurrentUnlock; 
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -212,40 +137,15 @@ const ProviderDetail = () => {
                 <p className="font-semibold text-gray-700">Categoría de Servicio</p>
                 <p>{provider.category || 'No especificado'}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <Phone className="h-5 w-5 text-gray-600" />
+              <div>
                 <p className="font-semibold text-gray-700">Teléfono:</p>
-                <p className={cn(showBlurred && 'blur-sm select-none')}>
-                  {provider.phone}
-                </p>
+                <p>{provider.phone}</p>
               </div>
-              <div className="flex items-center space-x-2">
-                <Mail className="h-5 w-5 text-gray-600" />
+              <div>
                 <p className="font-semibold text-gray-700">Correo:</p>
-                <p className={cn(showBlurred && 'blur-sm select-none')}>
-                  {provider.email}
-                </p>
+                <p>{provider.email}</p>
               </div>
             </div>
-
-            {canUnlock && (
-              <div className="text-center pt-4 border-t">
-                <Button onClick={handleUnlockContact} className="w-full md:w-auto">
-                  Liberar información de contacto (1 Token)
-                </Button>
-                <p className="text-sm text-muted-foreground mt-2">
-                  Tu saldo actual: {clientProfile?.token_balance ?? '0'} Tokens
-                </p>
-              </div>
-            )}
-
-            {canGiveFeedback && (
-              <div className="text-center pt-4 border-t">
-                <Button onClick={() => setIsFeedbackDialogOpen(true)} className="w-full md:w-auto">
-                  Calificar Proveedor
-                </Button>
-              </div>
-            )}
 
             <div className="space-y-2 pt-4 border-t">
               <p className="font-semibold text-gray-700">Descripción del Servicio</p>
@@ -279,16 +179,6 @@ const ProviderDetail = () => {
           </CardContent>
         </Card>
       </main>
-
-      {isClient && user && (
-        <FeedbackDialog
-          isOpen={isFeedbackDialogOpen}
-          onClose={() => setIsFeedbackDialogOpen(false)}
-          providerId={provider.id}
-          clientId={user.id}
-          onFeedbackSubmitted={handleFeedbackSubmitted}
-        />
-      )}
     </div>
   );
 };
