@@ -20,7 +20,16 @@ const editProfileSchema = z.object({
   skill: z.string().optional(),
   service_description: z.string().optional(),
   rate: z.preprocess(
-    (val) => (val === "" ? undefined : parseFloat(String(val))), // Manejar cadena vacía como undefined
+    (val) => {
+      // Si el valor es null, undefined, o una cadena vacía, lo tratamos como undefined
+      if (val === null || val === undefined || val === "") {
+        return undefined;
+      }
+      // Intentamos parsear el valor a un número flotante
+      const parsed = parseFloat(String(val));
+      // Si el resultado es NaN (no es un número), también lo tratamos como undefined
+      return isNaN(parsed) ? undefined : parsed;
+    },
     z.number().positive({ message: 'El costo debe ser un número positivo' }).optional()
   ),
   profile_image_file: z.instanceof(FileList).optional(),
