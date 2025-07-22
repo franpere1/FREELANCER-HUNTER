@@ -378,17 +378,42 @@ const Dashboard = () => {
 
         {profile.type === 'provider' && (
           <div className="mt-8">
-            <Card><CardHeader><CardTitle>Clientes Solicitando Servicio</CardTitle></CardHeader><CardContent><ScrollArea className="h-64 pr-4">{clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client: any) => <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0"><div><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div>
-            {client.hasUnreadMessages ? (
-              <Button size="sm" asChild className="bg-green-500 hover:bg-green-600 text-white animate-pulse">
-                <Link to={`/chat/${client.id}`} state={{ otherUser: client }}>Mensaje Nuevo</Link>
-              </Button>
-            ) : (
-              <Button size="sm" asChild>
-                <Link to={`/chat/${client.id}`} state={{ otherUser: client }}>Chatear</Link>
-              </Button>
-            )}
-            </div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}</ScrollArea></CardContent></Card>
+            <Card>
+              <CardHeader><CardTitle>Últimos Servicios Requeridos</CardTitle></CardHeader>
+              <CardContent>
+                <ScrollArea className="h-64 pr-4">
+                  {clientsLoading ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p>
+                  ) : requestingClients.length > 0 ? (
+                    requestingClients.map((client: any) => (
+                      <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0">
+                        <div className="flex items-center space-x-4">
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={client.profile_image || undefined} alt={client.name} />
+                            <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-semibold">{client.name}</p>
+                            <p className="text-xs text-muted-foreground">Cliente</p>
+                          </div>
+                        </div>
+                        {client.hasUnreadMessages ? (
+                          <Button size="sm" asChild className="bg-green-500 hover:bg-green-600 text-white animate-pulse">
+                            <Link to={`/chat/${client.id}`} state={{ otherUser: client }}>Mensaje Nuevo</Link>
+                          </Button>
+                        ) : (
+                          <Button size="sm" asChild>
+                            <Link to={`/chat/${client.id}`} state={{ otherUser: client }}>Chatear</Link>
+                          </Button>
+                        )}
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
           </div>
         )}
       </main>
