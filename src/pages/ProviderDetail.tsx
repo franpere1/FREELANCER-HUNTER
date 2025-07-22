@@ -116,17 +116,11 @@ const ProviderDetail = () => {
         throw error;
       }
 
-      if (data === 'DESBLOQUEO EXITOSO') {
+      if (data === 'DESBLOQUEO EXITOSO' || data === 'CONTACTO YA DESBLOQUEADO') {
         await refreshProfile(); // Refresh client's token balance
+        await fetchProviderAndUnlockStatus(); // Re-fetch provider data and unlock status to ensure UI consistency
         dismissToast(toastId);
         showSuccess('¡Información de contacto desbloqueada con éxito!');
-        setIsContactVisible(true); // Make contact visible
-        setHasSubmittedFeedback(false); // Reset feedback status for current view
-      } else if (data === 'CONTACTO YA DESBLOQUEADO') {
-        dismissToast(toastId);
-        showSuccess('La información de contacto ya está desbloqueada.');
-        setIsContactVisible(true); // Make contact visible
-        setHasSubmittedFeedback(false); // Reset feedback status for current view
       } else {
         throw new Error('Respuesta inesperada del servidor.');
       }
@@ -138,10 +132,9 @@ const ProviderDetail = () => {
   };
 
   const handleFeedbackSubmitted = () => {
-    // After feedback, blur the contact and mark feedback as submitted
-    setIsContactVisible(false); 
-    setHasSubmittedFeedback(true); 
-    fetchProviderAndUnlockStatus(); // Re-fetch provider data to update feedback list and star rating
+    // After feedback, re-fetch provider data to update feedback list, star rating, and re-evaluate unlock status
+    fetchProviderAndUnlockStatus(); 
+    setIsFeedbackDialogOpen(false); // Close the dialog
   };
 
   if (loading || authLoading) {
