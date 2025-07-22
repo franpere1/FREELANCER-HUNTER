@@ -52,25 +52,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    const initializeAuth = async () => {
+      // First, get the current session to handle the initial page load
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
+      
+      if (initialSession?.user) {
+        await fetchProfile(initialSession.user.id);
+      }
+      
+      setSession(initialSession);
+      setUser(initialSession?.user ?? null);
+      
+      // We are done with the initial load
       setLoading(false);
-    });
+
+      // Then, listen for subsequent auth changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+        const newCurrentUser = session?.user ?? null;
+        if (newCurrentUser) {
+          await fetchProfile(newCurrentUser.id);
+        } else {
+          setProfile(null);
+        }
+        setSession(session);
+        setUser(newCurrentUser);
+      });
+
+      return () => {
+        subscription.unsubscribe();
+      };
+    };
+
+    const unsubscribePromise = initializeAuth();
 
     return () => {
-      subscription.unsubscribe();
+      unsubscribePromise.then(cleanup => cleanup && cleanup());
     };
-  }, []);
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile(user.id);
-    } else {
-      setProfile(null);
-    }
-  }, [user, fetchProfile]);
+  }, [fetchProfile]);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
