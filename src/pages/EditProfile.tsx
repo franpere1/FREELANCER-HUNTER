@@ -172,6 +172,13 @@ const EditProfile = () => {
 
   const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).join('') : '';
 
+  // Para depuración: muestra los errores en la consola
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.log("Validation Errors:", errors);
+    }
+  }, [errors]);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <Card className="w-full max-w-2xl">
@@ -201,7 +208,7 @@ const EditProfile = () => {
                   {...register('profile_image_file')}
                   className={cn(errors.profile_image_file && "border-red-500")}
                 />
-                {errors.profile_image_file && <p className="text-red-500 text-xs mt-1">{errors.profile_image_file.message}</p>}
+                {errors.profile_image_file && <p className="text-red-500 text-sm font-semibold mt-1">{errors.profile_image_file.message}</p>}
               </div>
             </div>
 
@@ -249,7 +256,7 @@ const EditProfile = () => {
                       {...register('service_image_file')}
                       className={cn(errors.service_image_file && "border-red-500")}
                     />
-                    {errors.service_image_file && <p className="text-red-500 text-xs mt-1">{errors.service_image_file.message}</p>}
+                    {errors.service_image_file && <p className="text-red-500 text-sm font-semibold mt-1">{errors.service_image_file.message}</p>}
                   </div>
                 </div>
               </div>
