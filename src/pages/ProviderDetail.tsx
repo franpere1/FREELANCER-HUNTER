@@ -47,9 +47,7 @@ const ProviderDetail = () => {
     }
 
     setLoading(true);
-    // Reiniciar el estado de feedback al cargar un nuevo proveedor o refrescar
-    setHasSubmittedFeedback(false); 
-
+    
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -60,8 +58,13 @@ const ProviderDetail = () => {
       console.error("Error fetching provider:", error);
       showError('Error al cargar la información del proveedor.');
       setProvider(null);
+      setIsContactUnlocked(false);
+      setHasSubmittedFeedback(false);
     } else {
       setProvider(data);
+      let unlocked = false;
+      let feedbackGiven = false;
+
       if (clientProfile && clientProfile.type === 'client' && user) {
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
@@ -71,16 +74,15 @@ const ProviderDetail = () => {
           .single();
 
         if (!unlockedError && unlockedData) {
-          setIsContactUnlocked(true);
-          // Si el contacto está desbloqueado, verificar si ya se envió feedback
-          const clientHasGivenFeedback = data.feedback?.some((fb: any) => fb.clientId === user.id) || false;
-          setHasSubmittedFeedback(clientHasGivenFeedback);
-        } else {
-          setIsContactUnlocked(false);
+          unlocked = true;
         }
-      } else {
-        setIsContactUnlocked(false);
+
+        // Check if the current client has already given feedback
+        feedbackGiven = data.feedback?.some((fb: any) => fb.clientId === user.id) || false;
       }
+
+      setIsContactUnlocked(unlocked);
+      setHasSubmittedFeedback(feedbackGiven);
     }
     setLoading(false);
   }, [id, user, clientProfile]);
@@ -117,7 +119,7 @@ const ProviderDetail = () => {
         dismissToast(toastId);
         showSuccess('La información de contacto ya está desbloqueada.');
         setIsContactUnlocked(true);
-        setHasSubmittedFeedback(false); // Asegurarse de que no esté difuminado si ya estaba desbloqueado
+        setHasSubmittedFeedback(false); // Si ya estaba desbloqueado, no hay feedback pendiente
       } else if (data === 'DESBLOQUEO EXITOSO') {
         await refreshProfile();
         dismissToast(toastId);
@@ -135,8 +137,11 @@ const ProviderDetail = () => {
   };
 
   const handleFeedbackSubmitted = () => {
+    // Después de enviar el feedback, queremos volver a difuminar la información de contacto
+    // y hacer que el botón "Liberar" esté disponible de nuevo.
+    setIsContactUnlocked(false); // Esto hará que showBlurred sea true y canUnlock sea true
+    setHasSubmittedFeedback(true); // Esto ocultará el botón "Calificar"
     fetchProviderAndUnlockStatus(); // Refrescar los datos del proveedor (comentarios y calificación)
-    setHasSubmittedFeedback(true); // Establecer el estado para difuminar la información de contacto
   };
 
   if (loading || authLoading) {
@@ -164,10 +169,9 @@ const ProviderDetail = () => {
   }
 
   const isClient = clientProfile?.type === 'client';
-  const canUnlock = isClient && !isContactUnlocked;
-  // La información se difumina si es cliente Y (no está desbloqueada O ya se envió feedback)
-  const showBlurred = isClient && (!isContactUnlocked || hasSubmittedFeedback);
-  const canGiveFeedback = isClient && isContactUnlocked && !hasSubmittedFeedback;
+  const canUnlock = isClient && !isContactUnlocked; // Mostrar botón de desbloqueo si el contacto no está visible
+  const showBlurred = isClient && !isContactUnlocked; // Difuminar si el contacto no está visible
+  const canGiveFeedback = isClient && isContactUnlocked && !hasSubmittedFeedback; // Mostrar botón de calificar si el contacto está visible Y aún no se ha enviado feedback
 
   return (
     <div className="min-h-screen bg-gray-50">
