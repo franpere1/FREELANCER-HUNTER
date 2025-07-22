@@ -124,11 +124,15 @@ const ProviderDetail = () => {
             
           const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
 
-          const clientsWithStatus = clientsError ? [] : clientsData?.map(c => ({
-            ...c,
-            hasUnreadMessages: unreadSenders.has(c.id),
-          }));
-          setRequestingClients(clientsWithStatus as RequestingClient[]);
+          if (clientsError || !clientsData) {
+            setRequestingClients([]);
+          } else {
+            const clientsWithStatus = clientsData.map(c => ({
+              ...c,
+              hasUnreadMessages: unreadSenders.has(c.id),
+            }));
+            setRequestingClients(clientsWithStatus);
+          }
         }
         setClientsLoading(false);
       } else if (clientProfile && clientProfile.type === 'client') {

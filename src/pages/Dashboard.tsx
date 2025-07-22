@@ -12,6 +12,7 @@ import LatestProviders from '@/components/LatestProviders';
 import BuyTokensDialog from '@/components/BuyTokensDialog';
 import FeedbackDialog from '@/components/FeedbackDialog';
 import { showSuccess } from '@/utils/toast';
+import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
 
 const Dashboard = () => {
   const { profile, loading, refreshProfile, user } = useAuth();
@@ -147,11 +148,11 @@ const Dashboard = () => {
     } else if (profile.type === 'provider') {
       fetchProviderData();
     }
-  }, [profile, user, refreshProfile]);
+  }, [profile, user]);
 
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen bg-gray-50">Cargando...</div>;
+    return <DashboardSkeleton />;
   }
 
   if (!profile) {
@@ -179,7 +180,9 @@ const Dashboard = () => {
     showSuccess('¡Gracias por tu comentario!');
     setIsFeedbackDialogOpen(false);
     setSelectedProviderForFeedback(null);
-    refreshProfile();
+    // The profile data will be out of sync, let's refresh the whole page for simplicity
+    // to get all fresh data for contacts, etc.
+    window.location.reload();
   };
 
   return (

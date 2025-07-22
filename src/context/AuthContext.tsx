@@ -34,11 +34,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [profileLoading, setProfileLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Single loading state
 
   const fetchProfile = useCallback(async (userId: string) => {
-    setProfileLoading(true);
     const { data, error } = await supabase
       .from('profiles')
       .select('*')
@@ -49,55 +47,37 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       console.error("Error fetching profile:", error);
       setProfile(null);
     } else {
-      setProfile(data);
+      setProfile(data as Profile);
     }
-    setProfileLoading(false);
   }, []);
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (error) {
-        console.error("Error getting initial session:", error);
+    setLoading(true);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      const currentUser = session?.user;
+      setUser(currentUser ?? null);
+
+      if (currentUser) {
+        await fetchProfile(currentUser.id);
+      } else {
+        setProfile(null);
       }
-      setSession(session);
-      setUser(session?.user ?? null);
-      setAuthLoading(false);
-    };
-
-    getInitialSession();
-
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      // setAuthLoading(false); // No es necesario aquí, ya se hizo en getInitialSession
+      setLoading(false);
     });
 
     return () => {
-      authListener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, []);
+  }, [fetchProfile]);
 
-  useEffect(() => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
-      fetchProfile(user.id);
-    } else {
-      setProfile(null);
-      setProfileLoading(false); // Asegurarse de que profileLoading sea false si no hay usuario
+      await fetchProfile(user.id);
     }
   }, [user, fetchProfile]);
 
-  const value = {
-    session,
-    user,
-    profile,
-    loading: authLoading || profileLoading,
-    refreshProfile: useCallback(async () => {
-      if (user) {
-        await fetchProfile(user.id);
-      }
-    }, [user, fetchProfile]),
-  };
+  const value = { session, user, profile, loading, refreshProfile };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
