@@ -27,6 +27,7 @@ const Dashboard = () => {
   const [selectedProviderForFeedback, setSelectedProviderForFeedback] = useState<any>(null);
   const [requestingClients, setRequestingClients] = useState<any[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
+  const [refetchTrigger, setRefetchTrigger] = useState(0);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -158,7 +159,7 @@ const Dashboard = () => {
     } else if (profile.type === 'provider') {
       fetchProviderData();
     }
-  }, [loading, profile, user]);
+  }, [loading, profile, user, refetchTrigger]);
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -189,7 +190,7 @@ const Dashboard = () => {
     showSuccess('¡Gracias por tu comentario!');
     setIsFeedbackDialogOpen(false);
     setSelectedProviderForFeedback(null);
-    window.location.reload();
+    setRefetchTrigger(t => t + 1);
   };
 
   return (
