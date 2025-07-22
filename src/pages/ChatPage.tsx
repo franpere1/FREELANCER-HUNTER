@@ -47,6 +47,8 @@ const ChatPage = () => {
   const [isVerifying, setIsVerifying] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [isConnectionActive, setIsConnectionActive] = useState(false);
+  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -116,7 +118,9 @@ const ChatPage = () => {
     initializeChat();
 
     const channel = supabase
-      .channel(`chat:${user?.id}:${otherUserId}`)
+      .channel(`chat:${user?.id}:${otherUserId}`, {
+        config: { broadcast: { self: false } }
+      })
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user?.id}` },
         (payload) => {
           if (payload.new.sender_id === otherUserId) {
@@ -125,10 +129,32 @@ const ChatPage = () => {
               .then(({ error }) => { if (error) console.error("Error marking new message as read:", error); });
           }
         }
-      ).subscribe();
+      )
+      .on('broadcast', { event: 'typing' }, ({ payload }) => {
+        setIsOtherUserTyping(payload.isTyping);
+      })
+      .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [user, otherUserId, authLoading, navigate, refreshProfile]);
+
+  const handleTyping = (text: string) => {
+    setNewMessage(text);
+    const channel = supabase.channel(`chat:${user?.id}:${otherUserId}`);
+    if (!channel) return;
+
+    if (text) {
+      channel.track({ event: 'typing', payload: { isTyping: true } });
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      channel.track({ event: 'typing', payload: { isTyping: false } });
+    }, 2000);
+  };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +164,12 @@ const ChatPage = () => {
     const optimisticMessage: Message = { ...messageToSend, id: crypto.randomUUID(), timestamp: new Date().toISOString(), read_by: [user.id] };
     setMessages(prev => [...prev, optimisticMessage]);
     setNewMessage('');
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    const channel = supabase.channel(`chat:${user?.id}:${otherUserId}`);
+    channel?.track({ event: 'typing', payload: { isTyping: false } });
 
     const { error } = await supabase.from('messages').insert(messageToSend);
     if (error) {
@@ -171,7 +203,12 @@ const ChatPage = () => {
             <div className="flex items-center space-x-4">
               <Button variant="ghost" size="icon" onClick={() => navigate(-1)}><ArrowLeft className="h-5 w-5" /></Button>
               <Avatar><AvatarImage src={otherUser?.profile_image || undefined} /><AvatarFallback>{otherUser ? getInitials(otherUser.name) : '?'}</AvatarFallback></Avatar>
-              <CardTitle>{otherUser?.name || 'Chat'}</CardTitle>
+              <div>
+                <CardTitle>{otherUser?.name || 'Chat'}</CardTitle>
+                {isOtherUserTyping && (
+                  <p className="text-sm text-green-500 animate-pulse h-5">escribiendo...</p>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent className="flex-grow p-0">
@@ -196,7 +233,7 @@ const ChatPage = () => {
           </CardContent>
           <CardFooter className="border-t pt-4">
             <form onSubmit={handleSendMessage} className="flex w-full items-center space-x-2">
-              <Input value={newMessage} onChange={(e) => setNewMessage(e.target.value)} placeholder="Escribe un mensaje..." autoComplete="off" />
+              <Input value={newMessage} onChange={(e) => handleTyping(e.target.value)} placeholder="Escribe un mensaje..." autoComplete="off" />
               <Button type="submit" size="icon" disabled={!newMessage.trim()}><Send className="h-4 w-4" /><span className="sr-only">Enviar</span></Button>
             </form>
           </CardFooter>
