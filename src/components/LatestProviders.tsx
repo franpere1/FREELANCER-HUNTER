@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useNavigate } from 'react-router-dom'; // Importar useNavigate
 
 interface ProviderSummary {
   id: string;
@@ -25,6 +26,8 @@ const getInitials = (name: string) => {
 };
 
 const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading }) => {
+  const navigate = useNavigate(); // Inicializar useNavigate
+
   if (isLoading) {
     return (
       <Card className="w-full max-w-2xl mx-auto mt-8">
@@ -74,7 +77,7 @@ const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading 
                       </div>
                     </div>
                   </div>
-                  <Button variant="outline" onClick={() => console.log(`Ver proveedor ${provider.name}`)}>
+                  <Button variant="outline" onClick={() => navigate(`/provider/${provider.id}`)}> {/* Navegar a la página de detalles */}
                     Ver
                   </Button>
                 </div>
