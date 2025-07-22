@@ -12,6 +12,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import EditProfile from "./pages/EditProfile";
 import ProviderDetail from "./pages/ProviderDetail";
+import SimulatedBinancePay from "./pages/SimulatedBinancePay";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/edit-profile" element={<EditProfile />} />
               <Route path="/provider/:id" element={<ProviderDetail />} />
+              <Route path="/payment" element={<SimulatedBinancePay />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
