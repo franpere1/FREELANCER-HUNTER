@@ -92,7 +92,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
             <Label htmlFor="feedbackType">Tipo de Feedback</Label>
             <ToggleGroup
               type="single"
-              value={selectedFeedbackType ?? ''} // Asegurar que el valor sea siempre string
+              value={String(selectedFeedbackType ?? '')} // Asegurar que el valor sea siempre string
               onValueChange={handleFeedbackTypeChange}
               className="flex justify-center space-x-4"
               disabled={isSubmitting}
