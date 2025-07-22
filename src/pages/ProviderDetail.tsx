@@ -106,7 +106,8 @@ const ProviderDetail = () => {
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
           .select('client_id')
-          .eq('provider_id', providerData.id);
+          .eq('provider_id', providerData.id)
+          .eq('feedback_submitted_for_this_unlock', false); // Only show clients who haven't submitted feedback
 
         if (!unlockedError && unlockedData && unlockedData.length > 0) {
           const clientIds = unlockedData.map(uc => uc.client_id);

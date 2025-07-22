@@ -92,7 +92,8 @@ const Dashboard = () => {
       const { data: unlockedData, error: unlockedError } = await supabase
         .from('unlocked_contacts')
         .select('client_id')
-        .eq('provider_id', profile.id);
+        .eq('provider_id', profile.id)
+        .eq('feedback_submitted_for_this_unlock', false); // Only show clients who haven't submitted feedback
 
       if (unlockedError) {
         console.error("Error fetching unlocked contacts for provider:", unlockedError);
