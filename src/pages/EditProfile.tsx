@@ -19,8 +19,8 @@ const editProfileSchema = z.object({
   skill: z.string().optional(),
   service_description: z.string().optional(),
   rate: z.preprocess(
-    (a) => a ? parseFloat(z.string().parse(a)) : undefined,
-    z.number().positive().optional()
+    (val) => (val === "" ? undefined : parseFloat(String(val))), // Manejar cadena vacía como undefined
+    z.number().positive({ message: 'El costo debe ser un número positivo' }).optional()
   ),
   profile_image_file: z.instanceof(FileList).optional(),
   service_image_file: z.instanceof(FileList).optional(),
@@ -30,11 +30,11 @@ type EditProfileFormData = z.infer<typeof editProfileSchema>;
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const { profile, user, loading, refreshProfile } = useAuth(); // Obtenemos refreshProfile
+  const { profile, user, loading, refreshProfile } = useAuth();
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [serviceImagePreview, setServiceImagePreview] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm<EditProfileFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue } = useForm<EditProfileFormData>({
     resolver: zodResolver(editProfileSchema),
   });
 
@@ -125,7 +125,7 @@ const EditProfile = () => {
 
       if (error) throw error;
 
-      await refreshProfile(); // Llamamos a la función para refrescar el perfil
+      await refreshProfile();
       dismissToast(toastId);
       showSuccess('¡Perfil actualizado con éxito!');
       navigate('/dashboard');
@@ -208,7 +208,7 @@ const EditProfile = () => {
 
             <div className="flex justify-end space-x-2 pt-4">
               <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>Cancelar</Button>
-              <Button type="submit">Guardar Cambios</Button>
+              <Button type="submit" disabled={isSubmitting}>Guardar Cambios</Button>
             </div>
           </form>
         </CardContent>
