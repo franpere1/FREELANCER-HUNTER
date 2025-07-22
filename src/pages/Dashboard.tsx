@@ -2,14 +2,40 @@ import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const Dashboard = () => {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        Cargando...
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        Cargando perfil...
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
+        <Card className="max-w-md">
+          <CardHeader>
+            <CardTitle>Error al Cargar el Perfil</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p>No pudimos encontrar los datos de tu perfil. Esto puede ocurrir si tu cuenta fue creada antes de que el sistema de perfiles estuviera activo.</p>
+            <p>Por favor, intenta cerrar sesión y registrarte de nuevo.</p>
+            <Button onClick={handleLogout}>Cerrar Sesión</Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
