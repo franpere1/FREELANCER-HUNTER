@@ -8,8 +8,9 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { ArrowLeft, Send } from 'lucide-react';
+import { ArrowLeft, Send, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { showError } from '@/utils/toast';
 
 interface Message {
   id: string;
@@ -35,25 +36,8 @@ const ChatPage = () => {
   const [newMessage, setNewMessage] = useState('');
   const [otherUser, setOtherUser] = useState<OtherUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isConnectionActive, setIsConnectionActive] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const fetchOtherUser = async () => {
-      if (!otherUserId) return;
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, name, profile_image')
-        .eq('id', otherUserId)
-        .single();
-      
-      if (error) {
-        console.error("Error fetching other user:", error);
-      } else {
-        setOtherUser(data);
-      }
-    };
-    fetchOtherUser();
-  }, [otherUserId]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -62,26 +46,65 @@ const ChatPage = () => {
   }, [messages]);
 
   useEffect(() => {
-    if (!user || !otherUserId) return;
+    if (authLoading) return;
+    if (!user || !otherUserId) {
+      setLoading(false);
+      return;
+    }
 
-    const fetchMessages = async () => {
+    const initializeChat = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+
+      // 1. Verify that the contact has been unlocked between the two users
+      const { data: connection, error: connectionError } = await supabase
+        .from('unlocked_contacts')
+        .select('id')
+        .or(`(client_id.eq.${user.id},provider_id.eq.${otherUserId}),(client_id.eq.${otherUserId},provider_id.eq.${user.id})`)
+        .limit(1)
+        .single();
+
+      if (connectionError || !connection) {
+        showError("No tienes permiso para chatear con este usuario. El contacto debe ser desbloqueado primero.");
+        navigate('/dashboard');
+        return;
+      }
+      
+      setIsConnectionActive(true);
+
+      // 2. Fetch the other user's profile information
+      const { data: otherUserData, error: otherUserError } = await supabase
+        .from('profiles')
+        .select('id, name, profile_image')
+        .eq('id', otherUserId)
+        .single();
+      
+      if (otherUserError) {
+        console.error("Error fetching other user:", otherUserError);
+        showError("No se pudo cargar la información del otro usuario.");
+        navigate(-1);
+        return;
+      }
+      setOtherUser(otherUserData);
+
+      // 3. Fetch initial messages
+      const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select('*')
         .or(`(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`)
         .order('timestamp', { ascending: true });
 
-      if (error) {
-        console.error("Error fetching messages:", error);
+      if (messagesError) {
+        console.error("Error fetching messages:", messagesError);
       } else {
-        setMessages(data as Message[]);
+        setMessages(messagesData as Message[]);
       }
+      
       setLoading(false);
     };
 
-    fetchMessages();
+    initializeChat();
 
+    // 4. Subscribe to real-time updates
     const channel = supabase
       .channel(`chat:${user.id}:${otherUserId}`)
       .on(
@@ -93,7 +116,9 @@ const ChatPage = () => {
           filter: `receiver_id=eq.${user.id}`,
         },
         (payload) => {
-          setMessages((prevMessages) => [...prevMessages, payload.new as Message]);
+          if (payload.new.sender_id === otherUserId) {
+            setMessages((prevMessages) => [...prevMessages, payload.new as Message]);
+          }
         }
       )
       .subscribe();
@@ -101,7 +126,7 @@ const ChatPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, otherUserId]);
+  }, [user, otherUserId, authLoading, navigate]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,19 +138,43 @@ const ChatPage = () => {
       text: newMessage.trim(),
     };
 
+    const optimisticMessage: Message = {
+      ...messageToSend,
+      id: crypto.randomUUID(),
+      timestamp: new Date().toISOString(),
+    };
+    setMessages(prev => [...prev, optimisticMessage]);
+    setNewMessage('');
+
     const { error } = await supabase.from('messages').insert(messageToSend);
 
     if (error) {
       console.error("Error sending message:", error);
-    } else {
-      // Optimistically update UI
-      setMessages(prev => [...prev, { ...messageToSend, id: crypto.randomUUID(), timestamp: new Date().toISOString() }]);
-      setNewMessage('');
+      showError("Error al enviar el mensaje.");
+      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
     }
   };
 
-  if (authLoading || loading) {
-    return <div className="flex items-center justify-center min-h-screen">Cargando chat...</div>;
+  if (loading || authLoading) {
+    return <div className="flex items-center justify-center min-h-screen">Verificando conexión y cargando chat...</div>;
+  }
+
+  if (!isConnectionActive) {
+    // This is a fallback, the redirect should have already happened.
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
+        <Card className="max-w-md">
+          <CardHeader className="flex flex-row items-center justify-center space-x-2">
+            <ShieldAlert className="h-6 w-6 text-red-500" />
+            <CardTitle>Acceso Denegado</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p>No tienes permiso para acceder a este chat.</p>
+            <Button onClick={() => navigate('/dashboard')}>Volver al Dashboard</Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
