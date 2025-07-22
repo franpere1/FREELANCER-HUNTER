@@ -7,7 +7,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Edit, Star, Search } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import LatestProviders from '@/components/LatestProviders';
 import BuyTokensDialog from '@/components/BuyTokensDialog';
 import FeedbackDialog from '@/components/FeedbackDialog';
@@ -19,7 +19,6 @@ const Dashboard = () => {
   const { profile, loading, refreshProfile, user } = useAuth();
   const navigate = useNavigate();
   
-  // State for clients
   const [latestProviders, setLatestProviders] = useState<any[]>([]);
   const [providersLoading, setProvidersLoading] = useState(true);
   const [isBuyTokensDialogOpen, setIsBuyTokensDialogOpen] = useState(false);
@@ -28,8 +27,6 @@ const Dashboard = () => {
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [selectedProviderForFeedback, setSelectedProviderForFeedback] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
-
-  // State for providers
   const [requestingClients, setRequestingClients] = useState<any[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
 
@@ -38,111 +35,114 @@ const Dashboard = () => {
     navigate('/login');
   };
 
-  useEffect(() => {
-    if (!profile || !user) return;
+  const fetchClientData = useCallback(async () => {
+    if (!user || !profile || profile.type !== 'client') return;
+    setActiveContactsLoading(true);
+    const { data: unlockedData, error: unlockedError } = await supabase
+      .from('unlocked_contacts')
+      .select('provider_id, feedback_submitted_for_this_unlock')
+      .eq('client_id', profile.id)
+      .eq('feedback_submitted_for_this_unlock', false);
 
-    const fetchClientData = async () => {
-      setActiveContactsLoading(true);
-      const { data: unlockedData, error: unlockedError } = await supabase
-        .from('unlocked_contacts')
-        .select('provider_id, feedback_submitted_for_this_unlock')
-        .eq('client_id', profile.id)
-        .eq('feedback_submitted_for_this_unlock', false);
+    if (unlockedError) {
+      console.error("Error fetching active contacts:", unlockedError);
+      setActiveContacts([]);
+    } else {
+      const providerIds = unlockedData.map(uc => uc.provider_id);
+      if (providerIds.length > 0) {
+        const { data: providers, error } = await supabase
+          .from('profiles')
+          .select('id, name, skill, rate, profile_image, star_rating')
+          .in('id', providerIds);
+        
+        const { data: unreadData } = await supabase
+          .from('messages')
+          .select('sender_id')
+          .eq('receiver_id', user.id)
+          .in('sender_id', providerIds)
+          .not('read_by', 'cs', `{${user.id}}`);
+        
+        const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
 
-      if (unlockedError) {
-        console.error("Error fetching active contacts:", unlockedError);
-        setActiveContacts([]);
-      } else {
-        const providerIds = unlockedData.map(uc => uc.provider_id);
-        if (providerIds.length > 0) {
-          const { data: providers, error } = await supabase
-            .from('profiles')
-            .select('id, name, skill, rate, profile_image, star_rating')
-            .in('id', providerIds);
-          
-          const { data: unreadData } = await supabase
-            .from('messages')
-            .select('sender_id')
-            .eq('receiver_id', user.id)
-            .in('sender_id', providerIds)
-            .not('read_by', 'cs', `{${user.id}}`);
-          
-          const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
-
-          if (error) {
-            console.error("Error fetching provider profiles for active contacts:", error);
-            setActiveContacts([]);
-          } else {
-            const contactsWithStatus = providers?.map(p => ({
-              ...p,
-              feedback_submitted: unlockedData.find(ud => ud.provider_id === p.id)?.feedback_submitted_for_this_unlock,
-              hasUnreadMessages: unreadSenders.has(p.id),
-            }));
-            setActiveContacts(contactsWithStatus || []);
-          }
-        } else {
+        if (error) {
+          console.error("Error fetching provider profiles for active contacts:", error);
           setActiveContacts([]);
-        }
-      }
-      setActiveContactsLoading(false);
-    };
-
-    const fetchProviderData = async () => {
-      setClientsLoading(true);
-      const { data: unlockedData, error: unlockedError } = await supabase
-        .from('unlocked_contacts')
-        .select('client_id')
-        .eq('provider_id', profile.id)
-        .eq('feedback_submitted_for_this_unlock', false);
-
-      if (unlockedError) {
-        console.error("Error fetching unlocked contacts for provider:", unlockedError);
-        setRequestingClients([]);
-      } else {
-        const clientIds = unlockedData.map(uc => uc.client_id);
-        if (clientIds.length > 0) {
-          const { data: clientsData, error: clientsError } = await supabase
-            .from('profiles')
-            .select('id, name, phone, email')
-            .in('id', clientIds);
-
-          const { data: unreadData } = await supabase
-            .from('messages')
-            .select('sender_id')
-            .eq('receiver_id', user.id)
-            .in('sender_id', clientIds)
-            .not('read_by', 'cs', `{${user.id}}`);
-            
-          const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
-
-          if (clientsError) {
-            console.error("Error fetching requesting clients:", clientsError);
-          } else {
-            const clientsWithStatus = clientsData?.map(c => ({
-              ...c,
-              hasUnreadMessages: unreadSenders.has(c.id),
-            }));
-            setRequestingClients(clientsWithStatus || []);
-          }
         } else {
-          setRequestingClients([]);
+          const contactsWithStatus = providers?.map(p => ({
+            ...p,
+            feedback_submitted: unlockedData.find(ud => ud.provider_id === p.id)?.feedback_submitted_for_this_unlock,
+            hasUnreadMessages: unreadSenders.has(p.id),
+          }));
+          setActiveContacts(contactsWithStatus || []);
         }
+      } else {
+        setActiveContacts([]);
       }
-      setClientsLoading(false);
-    };
-    
-    const fetchLatestProvidersForClient = async () => {
-        setProvidersLoading(true);
-        const { data: providersData, error: providersError } = await supabase
-            .from('profiles')
-            .select('id, name, skill, rate, profile_image, star_rating, category, state')
-            .eq('type', 'provider')
-            .order('created_at', { ascending: false })
-            .limit(20);
-        if (providersError) console.error("Error fetching latest providers:", providersError);
-        else setLatestProviders(providersData || []);
-        setProvidersLoading(false);
-    };
+    }
+    setActiveContactsLoading(false);
+  }, [user, profile]);
+
+  const fetchProviderData = useCallback(async () => {
+    if (!user || !profile || profile.type !== 'provider') return;
+    setClientsLoading(true);
+    const { data: unlockedData, error: unlockedError } = await supabase
+      .from('unlocked_contacts')
+      .select('client_id')
+      .eq('provider_id', profile.id)
+      .eq('feedback_submitted_for_this_unlock', false);
+
+    if (unlockedError) {
+      console.error("Error fetching unlocked contacts for provider:", unlockedError);
+      setRequestingClients([]);
+    } else {
+      const clientIds = unlockedData.map(uc => uc.client_id);
+      if (clientIds.length > 0) {
+        const { data: clientsData, error: clientsError } = await supabase
+          .from('profiles')
+          .select('id, name, phone, email')
+          .in('id', clientIds);
+
+        const { data: unreadData } = await supabase
+          .from('messages')
+          .select('sender_id')
+          .eq('receiver_id', user.id)
+          .in('sender_id', clientIds)
+          .not('read_by', 'cs', `{${user.id}}`);
+          
+        const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
+
+        if (clientsError) {
+          console.error("Error fetching requesting clients:", clientsError);
+        } else {
+          const clientsWithStatus = clientsData?.map(c => ({
+            ...c,
+            hasUnreadMessages: unreadSenders.has(c.id),
+          }));
+          setRequestingClients(clientsWithStatus || []);
+        }
+      } else {
+        setRequestingClients([]);
+      }
+    }
+    setClientsLoading(false);
+  }, [user, profile]);
+
+  const fetchLatestProvidersForClient = useCallback(async () => {
+    if (!profile || profile.type !== 'client') return;
+    setProvidersLoading(true);
+    const { data: providersData, error: providersError } = await supabase
+        .from('profiles')
+        .select('id, name, skill, rate, profile_image, star_rating, category, state')
+        .eq('type', 'provider')
+        .order('created_at', { ascending: false })
+        .limit(20);
+    if (providersError) console.error("Error fetching latest providers:", providersError);
+    else setLatestProviders(providersData || []);
+    setProvidersLoading(false);
+  }, [profile]);
+
+  useEffect(() => {
+    if (loading || !profile) return;
 
     if (profile.type === 'client') {
       fetchClientData();
@@ -150,7 +150,7 @@ const Dashboard = () => {
     } else if (profile.type === 'provider') {
       fetchProviderData();
     }
-  }, [profile, user]);
+  }, [loading, profile, fetchClientData, fetchProviderData, fetchLatestProvidersForClient]);
 
   const filteredProviders = latestProviders.filter(provider => {
     const query = searchQuery.toLowerCase();
