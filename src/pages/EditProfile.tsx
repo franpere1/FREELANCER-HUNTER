@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea'; // <-- Corrección aquí
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
@@ -171,13 +171,6 @@ const EditProfile = () => {
 
   const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).join('') : '';
 
-  // Para depuración: muestra los errores en la consola
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.log("Validation Errors:", errors);
-    }
-  }, [errors]);
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <Card className="w-full max-w-2xl">
@@ -187,6 +180,12 @@ const EditProfile = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {Object.keys(errors).length > 0 && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong className="font-bold">¡Error de validación!</strong>
+                <span className="block sm:inline"> Por favor, revisa los campos marcados.</span>
+              </div>
+            )}
             <div className="flex items-center space-x-4">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={profileImagePreview || undefined} />
@@ -200,6 +199,7 @@ const EditProfile = () => {
                   accept="image/*"
                   {...register('profile_image_file')}
                 />
+                {errors.profile_image_file && <p className="text-red-500 text-xs mt-1">{errors.profile_image_file.message}</p>}
               </div>
             </div>
 
@@ -222,14 +222,17 @@ const EditProfile = () => {
                 <div>
                   <Label htmlFor="skill">Oficio o Habilidad</Label>
                   <Input id="skill" {...register('skill')} />
+                  {errors.skill && <p className="text-red-500 text-sm font-semibold mt-1">{errors.skill.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor="service_description">Descripción del Servicio</Label>
                   <Textarea id="service_description" {...register('service_description')} />
+                  {errors.service_description && <p className="text-red-500 text-sm font-semibold mt-1">{errors.service_description.message}</p>}
                 </div>
                 <div>
                   <Label htmlFor="rate">Costo Aproximado del Servicio (BCV)</Label>
                   <Input id="rate" type="number" step="0.01" {...register('rate')} />
+                  {errors.rate && <p className="text-red-500 text-sm font-semibold mt-1">{errors.rate.message}</p>}
                 </div>
                 <div className="flex items-center space-x-4">
                   <div className="w-24 h-24 bg-gray-200 rounded border">
@@ -243,6 +246,7 @@ const EditProfile = () => {
                       accept="image/*"
                       {...register('service_image_file')}
                     />
+                    {errors.service_image_file && <p className="text-red-500 text-xs mt-1">{errors.service_image_file.message}</p>}
                   </div>
                 </div>
               </div>
