@@ -277,7 +277,7 @@ const Dashboard = () => {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div><p className="font-semibold text-gray-600">Categoría</p><p>{profile.category || 'No especificado'}</p></div>
                     <div><p className="font-semibold text-gray-600">Oficio/Habilidad</p><p>{profile.skill || 'No especificado'}</p></div>
-                    <div><p className="font-semibold text-gray-600">Costo Aproximado (BCV)</p><p>{profile.rate ? `$${profile.rate}` : 'No especificado'}</p></div>
+                    <div><p className="font-semibold text-gray-600">Costo Aproximado</p><p>{profile.rate ? `$${profile.rate}` : 'No especificado'}</p></div>
                   </div>
                   <div><p className="font-semibold text-gray-600">Descripción del Servicio</p><p className="text-muted-foreground">{profile.service_description || 'No disponible'}</p></div>
                   {profile.service_image && <div className="space-y-2"><p className="font-semibold text-gray-600">Imagen del Servicio</p><img src={profile.service_image} alt="Servicio" className="rounded-lg max-w-sm border shadow-sm" /></div>}
@@ -309,7 +309,7 @@ const Dashboard = () => {
                               <div>
                                 <p className="font-semibold text-lg">{provider.name}</p>
                                 <p className="text-sm text-muted-foreground">{provider.skill || 'Sin oficio'}</p>
-                                <div className="flex items-center mt-1">{[...Array(5)].map((_, i) => <Star key={i} className={`h-4 w-4 ${provider.star_rating && i < provider.star_rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />)}{provider.rate && <span className="ml-2 text-sm text-gray-600">~ ${provider.rate} BCV</span>}</div>
+                                <div className="flex items-center mt-1">{[...Array(5)].map((_, i) => <Star key={i} className={`h-4 w-4 ${provider.star_rating && i < provider.star_rating ? 'text-yellow-500 fill-yellow-500' : 'text-gray-300'}`} />)}{provider.rate && <span className="ml-2 text-sm text-gray-600">~ ${provider.rate}</span>}</div>
                               </div>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2">

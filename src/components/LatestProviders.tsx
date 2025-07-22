@@ -78,7 +78,7 @@ const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading 
                       }`}
                     />
                   ))}
-                  {provider.rate && <span className="ml-2 text-sm text-gray-600">~ ${provider.rate} BCV</span>}
+                  {provider.rate && <span className="ml-2 text-sm text-gray-600">~ ${provider.rate}</span>}
                 </div>
               </div>
             </div>

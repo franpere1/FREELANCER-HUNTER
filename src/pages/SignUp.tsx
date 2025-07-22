@@ -177,7 +177,7 @@ const SignUpForm = ({ type, onSubmit, register, errors, setValue }: any) => (
                 {errors.service_description && <p className="text-red-500 text-xs mt-1">{errors.service_description.message}</p>}
               </div>
               <div>
-                <Label htmlFor="rate">Costo Aproximado del Servicio (BCV)</Label>
+                <Label htmlFor="rate">Costo Aproximado del Servicio ($)</Label>
                 <Input id="rate" type="number" step="0.01" {...register('rate')} />
                 {errors.rate && <p className="text-red-500 text-xs mt-1">{errors.rate.message}</p>}
               </div>

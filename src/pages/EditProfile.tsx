@@ -239,7 +239,7 @@ const EditProfile = () => {
                   {errors.service_description && <p className="text-red-500 text-sm font-semibold mt-1">{errors.service_description.message}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="rate">Costo Aproximado del Servicio (BCV)</Label>
+                  <Label htmlFor="rate">Costo Aproximado del Servicio ($)</Label>
                   <Input id="rate" type="number" step="0.01" {...register('rate')} value={String(watch('rate') ?? '')} className={cn(errors.rate && "border-red-500")} />
                   {errors.rate && <p className="text-red-500 text-sm font-semibold mt-1">{errors.rate.message}</p>}
                 </div>
