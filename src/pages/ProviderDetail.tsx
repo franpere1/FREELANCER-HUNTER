@@ -10,6 +10,17 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
 import FeedbackDialog from '@/components/FeedbackDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface ProviderProfile {
   id: string;
@@ -274,9 +285,28 @@ const ProviderDetail = () => {
             {isClient && (
               <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
                 {canShowContactButton && (
-                  <Button onClick={handleUnlockContact} className="w-full sm:w-auto" disabled={(clientProfile?.token_balance || 0) < 1}>
-                    Mostrar Contacto (1 Token)
-                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button className="w-full sm:w-auto" disabled={(clientProfile?.token_balance || 0) < 1}>
+                        Mostrar Contacto (1 Token)
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Confirmar Desbloqueo?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Estás a punto de usar 1 token para ver la información de contacto de este proveedor.
+                          Esta acción no se puede deshacer. ¿Deseas continuar?
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleUnlockContact}>
+                          Confirmar y Desbloquear
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
                 {canShowFeedbackButton && (
                   <Button variant="secondary" onClick={() => setIsFeedbackDialogOpen(true)} className="w-full sm:w-auto">
