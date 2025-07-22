@@ -72,13 +72,10 @@ const ProviderDetail = () => {
   };
 
   const fetchProviderAndUnlockedStatus = useCallback(async () => {
-    if (!id) {
-      showError('ID de proveedor no encontrado.');
+    if (!id || !user) {
       setLoading(false);
       return;
     }
-
-    setLoading(true);
     
     const { data: providerData, error: providerError } = await supabase
       .from('profiles')
@@ -95,7 +92,8 @@ const ProviderDetail = () => {
     }
     setProvider(providerData);
 
-    if (user && providerData && user.id === providerData.id) {
+    // Scenario 1: The logged-in user is the provider being viewed
+    if (user.id === providerData.id) {
       setClientsLoading(true);
       const { data: unlockedData, error: unlockedError } = await supabase
         .from('unlocked_contacts')
@@ -104,7 +102,6 @@ const ProviderDetail = () => {
 
       if (unlockedError) {
         console.error("Error fetching unlocked contacts:", unlockedError);
-        showError('Error al cargar la lista de clientes.');
         setRequestingClients([]);
       } else {
         const clientIds = unlockedData.map(uc => uc.client_id);
@@ -116,7 +113,6 @@ const ProviderDetail = () => {
 
           if (clientsError) {
             console.error("Error fetching client profiles:", clientsError);
-            showError('Error al cargar los perfiles de los clientes.');
             setRequestingClients([]);
           } else {
             setRequestingClients(clientsData as RequestingClient[]);
@@ -126,11 +122,9 @@ const ProviderDetail = () => {
         }
       }
       setClientsLoading(false);
-    } else {
-      setClientsLoading(false);
-    }
-
-    if (clientProfile && clientProfile.type === 'client' && user) {
+    } 
+    // Scenario 2: The logged-in user is a client viewing a provider
+    else if (clientProfile && clientProfile.type === 'client') {
       const { data: unlockedContact, error: unlockedError } = await supabase
         .from('unlocked_contacts')
         .select('*')
@@ -144,21 +138,29 @@ const ProviderDetail = () => {
 
       if (unlockedContact) {
         setUnlockedContactRecord(unlockedContact);
-        setIsContactUnlocked(true); // Contact is considered unlocked regardless of feedback status
+        setIsContactUnlocked(true);
       } else {
         setUnlockedContactRecord(null);
         setIsContactUnlocked(false);
       }
-    } else {
-      setIsContactUnlocked(false);
-      setUnlockedContactRecord(null);
     }
+    
     setLoading(false);
   }, [id, clientProfile, user]);
 
   useEffect(() => {
-    fetchProviderAndUnlockedStatus();
-  }, [fetchProviderAndUnlockedStatus]);
+    // Reset state on ID change to prevent stale data from previous page
+    setLoading(true);
+    setProvider(null);
+    setIsContactUnlocked(false);
+    setUnlockedContactRecord(null);
+    setRequestingClients([]);
+    setClientsLoading(true);
+
+    if (!authLoading) {
+      fetchProviderAndUnlockedStatus();
+    }
+  }, [id, authLoading, fetchProviderAndUnlockedStatus]);
 
   const handleUnlockContact = async () => {
     if (!user || clientProfile?.type !== 'client' || !id) {
