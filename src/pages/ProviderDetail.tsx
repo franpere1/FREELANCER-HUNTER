@@ -137,16 +137,16 @@ const ProviderDetail = () => {
           }
           setClientsLoading(false);
         } else if (clientProfile && clientProfile.type === 'client') {
-          const { data: unlockedContact, error: unlockedError } = await supabase
+          const { data: unlockedContacts, error: unlockedError } = await supabase
             .from('unlocked_contacts')
             .select('*')
             .eq('client_id', user.id)
             .eq('provider_id', id)
             .eq('feedback_submitted_for_this_unlock', false)
-            .single();
+            .order('last_unlocked_at', { ascending: false });
 
-          if (unlockedContact && !unlockedError) {
-            setUnlockedContactRecord(unlockedContact);
+          if (unlockedContacts && unlockedContacts.length > 0 && !unlockedError) {
+            setUnlockedContactRecord(unlockedContacts[0]);
             setIsContactUnlocked(true);
           }
         }
@@ -176,14 +176,26 @@ const ProviderDetail = () => {
     try {
       const { data: result, error: unlockError } = await supabase.rpc('unlock_provider_contact', { provider_id_in: id });
       if (unlockError) throw unlockError;
+
+      // Optimistic Update: Show contact info immediately
+      setIsContactUnlocked(true);
+
       dismissToast(toastId);
-      showSuccess(result);
+      
+      if (typeof result === 'string' && result.startsWith('CONTACTO YA DESBLOQUEADO')) {
+        showError(result);
+      } else {
+        showSuccess('¡Contacto desbloqueado con éxito! Ahora puedes chatear con el proveedor.');
+      }
+
       await refreshProfile();
-      setRefetchTrigger(t => t + 1);
+      setRefetchTrigger(t => t + 1); // Refetch in background to get full record
     } catch (err: unknown) {
       dismissToast(toastId);
       console.error('Error al desbloquear contacto:', err);
       showError(err instanceof Error ? err.message : String(err || 'Error al desbloquear el contacto.'));
+      // Revert optimistic update on error
+      setIsContactUnlocked(false);
     }
   };
 
