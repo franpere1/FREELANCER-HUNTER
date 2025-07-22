@@ -13,10 +13,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'; // Importar ToggleGroup
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ThumbsUp, ThumbsDown, MinusCircle } from 'lucide-react'; // Importar los iconos
+import { ThumbsUp, ThumbsDown, MinusCircle, CheckCircle } from 'lucide-react'; // Importar CheckCircle
 
 const feedbackSchema = z.object({
   feedbackType: z.enum(['positive', 'negative', 'neutral'], {
@@ -36,11 +36,13 @@ interface FeedbackDialogProps {
 }
 
 const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, providerId, clientId, onFeedbackSubmitted }) => {
-  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, reset } = useForm<FeedbackFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, reset, watch } = useForm<FeedbackFormData>({
     resolver: zodResolver(feedbackSchema),
   });
 
-  const handleSelectChange = (value: string) => {
+  const selectedFeedbackType = watch('feedbackType'); // Observar el valor seleccionado
+
+  const handleFeedbackTypeChange = (value: string) => {
     setValue('feedbackType', value as 'positive' | 'negative' | 'neutral', { shouldValidate: true });
   };
 
@@ -89,29 +91,30 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
         <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="feedbackType">Tipo de Feedback</Label>
-            <Select onValueChange={handleSelectChange}>
-              <SelectTrigger id="feedbackType">
-                <SelectValue placeholder="Selecciona un tipo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="positive">
-                  <div className="flex items-center">
-                    <ThumbsUp className="mr-2 h-4 w-4 text-green-500" /> Positivo
-                  </div>
-                </SelectItem>
-                <SelectItem value="negative">
-                  <div className="flex items-center">
-                    <ThumbsDown className="mr-2 h-4 w-4 text-red-500" /> Negativo
-                  </div>
-                </SelectItem>
-                <SelectItem value="neutral">
-                  <div className="flex items-center">
-                    <MinusCircle className="mr-2 h-4 w-4 text-gray-500" /> Neutral
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {errors.feedbackType && <p className="text-red-500 text-xs mt-1">{errors.feedbackType.message}</p>}
+            <ToggleGroup
+              type="single"
+              value={selectedFeedbackType}
+              onValueChange={handleFeedbackTypeChange}
+              className="flex justify-center space-x-4"
+              disabled={isSubmitting}
+            >
+              <ToggleGroupItem value="positive" aria-label="Feedback Positivo" className="flex flex-col items-center p-4 h-auto w-28">
+                <ThumbsUp className="h-8 w-8 text-green-500" />
+                <span className="mt-2 text-sm">Positivo</span>
+                {selectedFeedbackType === 'positive' && <CheckCircle className="h-4 w-4 text-blue-500 mt-1" />}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="neutral" aria-label="Feedback Neutral" className="flex flex-col items-center p-4 h-auto w-28">
+                <MinusCircle className="h-8 w-8 text-gray-500" />
+                <span className="mt-2 text-sm">Neutral</span>
+                {selectedFeedbackType === 'neutral' && <CheckCircle className="h-4 w-4 text-blue-500 mt-1" />}
+              </ToggleGroupItem>
+              <ToggleGroupItem value="negative" aria-label="Feedback Negativo" className="flex flex-col items-center p-4 h-auto w-28">
+                <ThumbsDown className="h-8 w-8 text-red-500" />
+                <span className="mt-2 text-sm">Negativo</span>
+                {selectedFeedbackType === 'negative' && <CheckCircle className="h-4 w-4 text-blue-500 mt-1" />}
+              </ToggleGroupItem>
+            </ToggleGroup>
+            {errors.feedbackType && <p className="text-red-500 text-xs mt-1 text-center">{errors.feedbackType.message}</p>}
           </div>
           <div className="grid gap-2">
             <Label htmlFor="comment">Comentario (Opcional)</Label>
@@ -120,6 +123,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
               placeholder="Escribe tu comentario aquí..."
               {...register('comment')}
               rows={4}
+              disabled={isSubmitting}
             />
             {errors.comment && <p className="text-red-500 text-xs mt-1">{errors.comment.message}</p>}
           </div>
@@ -127,7 +131,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
             <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || !selectedFeedbackType}>
               {isSubmitting ? 'Enviando...' : 'Enviar Calificación'}
             </Button>
           </DialogFooter>
