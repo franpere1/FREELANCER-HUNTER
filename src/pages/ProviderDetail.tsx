@@ -37,6 +37,7 @@ const ProviderDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isContactVisible, setIsContactVisible] = useState(false); // Controla si el contacto está visible (no difuminado)
   const [feedbackSubmittedForCurrentUnlock, setFeedbackSubmittedForCurrentUnlock] = useState(false); // Nuevo estado
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false); // <--- ¡AQUÍ ESTÁ LA DECLARACIÓN QUE FALTABA!
 
   const fetchProviderAndUnlockStatus = useCallback(async () => {
     if (!id) {
