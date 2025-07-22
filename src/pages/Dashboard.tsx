@@ -1,11 +1,11 @@
 import { useAuth } from '@/context/AuthContext';
 import Header from '@/components/Header';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Star } from 'lucide-react';
+import { Edit, Star, Search } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEffect, useState } from 'react';
 import LatestProviders from '@/components/LatestProviders';
@@ -13,6 +13,7 @@ import BuyTokensDialog from '@/components/BuyTokensDialog';
 import FeedbackDialog from '@/components/FeedbackDialog';
 import { showSuccess } from '@/utils/toast';
 import DashboardSkeleton from '@/components/skeletons/DashboardSkeleton';
+import { Input } from '@/components/ui/input';
 
 const Dashboard = () => {
   const { profile, loading, refreshProfile, user } = useAuth();
@@ -26,6 +27,7 @@ const Dashboard = () => {
   const [activeContactsLoading, setActiveContactsLoading] = useState(true);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [selectedProviderForFeedback, setSelectedProviderForFeedback] = useState<any>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // State for providers
   const [requestingClients, setRequestingClients] = useState<any[]>([]);
@@ -133,10 +135,10 @@ const Dashboard = () => {
         setProvidersLoading(true);
         const { data: providersData, error: providersError } = await supabase
             .from('profiles')
-            .select('id, name, skill, rate, profile_image, star_rating')
+            .select('id, name, skill, rate, profile_image, star_rating, category, state')
             .eq('type', 'provider')
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(20);
         if (providersError) console.error("Error fetching latest providers:", providersError);
         else setLatestProviders(providersData || []);
         setProvidersLoading(false);
@@ -150,6 +152,15 @@ const Dashboard = () => {
     }
   }, [profile, user]);
 
+  const filteredProviders = latestProviders.filter(provider => {
+    const query = searchQuery.toLowerCase();
+    return (
+      provider.name.toLowerCase().includes(query) ||
+      (provider.skill && provider.skill.toLowerCase().includes(query)) ||
+      (provider.category && provider.category.toLowerCase().includes(query)) ||
+      (provider.state && provider.state.toLowerCase().includes(query))
+    );
+  });
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -180,8 +191,6 @@ const Dashboard = () => {
     showSuccess('¡Gracias por tu comentario!');
     setIsFeedbackDialogOpen(false);
     setSelectedProviderForFeedback(null);
-    // The profile data will be out of sync, let's refresh the whole page for simplicity
-    // to get all fresh data for contacts, etc.
     window.location.reload();
   };
 
@@ -291,7 +300,44 @@ const Dashboard = () => {
                 </CardContent>
               </Card>
             </div>
-            <div className="mt-8"><LatestProviders providers={latestProviders} isLoading={providersLoading} /></div>
+            
+            <div className="mt-8">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Buscar Proveedores</CardTitle>
+                        <CardDescription>Encuentra profesionales por nombre, oficio, categoría o estado.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="relative">
+                            <Search className="absolute left-2.5 top-3 h-5 w-5 text-muted-foreground" />
+                            <Input
+                                type="search"
+                                placeholder="Ej: Plomero, Lara, Servicios Digitales..."
+                                className="pl-10 w-full"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            <div className="mt-8">
+              <Card>
+                <CardHeader>
+                  <CardTitle>
+                    {searchQuery ? 'Resultados de la Búsqueda' : 'Últimos Proveedores Registrados'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <LatestProviders 
+                    providers={filteredProviders} 
+                    isLoading={providersLoading}
+                    searchQuery={searchQuery}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </>
         )}
 
