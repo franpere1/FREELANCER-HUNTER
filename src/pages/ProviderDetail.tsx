@@ -36,6 +36,13 @@ interface UnlockedContact {
   feedback_submitted_for_this_unlock: boolean;
 }
 
+interface RequestingClient {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+}
+
 const ProviderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -45,6 +52,8 @@ const ProviderDetail = () => {
   const [isContactUnlocked, setIsContactUnlocked] = useState(false);
   const [unlockedContactRecord, setUnlockedContactRecord] = useState<UnlockedContact | null>(null);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
+  const [requestingClients, setRequestingClients] = useState<RequestingClient[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(true);
 
   const getInitials = (name: string) => {
     if (!name) return '';
@@ -60,7 +69,6 @@ const ProviderDetail = () => {
 
     setLoading(true);
     
-    // Fetch provider details
     const { data: providerData, error: providerError } = await supabase
       .from('profiles')
       .select('*')
@@ -76,7 +84,25 @@ const ProviderDetail = () => {
     }
     setProvider(providerData);
 
-    // If current user is a client, check unlocked status
+    if (user && providerData && user.id === providerData.id) {
+      setClientsLoading(true);
+      const { data: clientsData, error: clientsError } = await supabase
+        .from('unlocked_contacts')
+        .select('profiles(id, name, phone, email)')
+        .eq('provider_id', providerData.id);
+
+      if (clientsError) {
+        console.error("Error fetching requesting clients:", clientsError);
+        showError('Error al cargar los clientes solicitantes.');
+      } else {
+        const clients = clientsData.map(item => item.profiles).filter(Boolean);
+        setRequestingClients(clients as RequestingClient[]);
+      }
+      setClientsLoading(false);
+    } else {
+      setClientsLoading(false);
+    }
+
     if (clientProfile && clientProfile.type === 'client' && user) {
       const { data: unlockedContact, error: unlockedError } = await supabase
         .from('unlocked_contacts')
@@ -85,20 +111,19 @@ const ProviderDetail = () => {
         .eq('provider_id', id)
         .single();
 
-      if (unlockedError && unlockedError.code !== 'PGRST116') { // PGRST116 means no rows found
+      if (unlockedError && unlockedError.code !== 'PGRST116') {
         console.error("Error fetching unlocked contact:", unlockedError);
       }
 
       if (unlockedContact) {
         setUnlockedContactRecord(unlockedContact);
-        // Contact is visible if it was previously unlocked AND feedback has NOT been submitted for this unlock cycle
         setIsContactUnlocked(!unlockedContact.feedback_submitted_for_this_unlock);
       } else {
         setUnlockedContactRecord(null);
-        setIsContactUnlocked(false); // Not unlocked yet
+        setIsContactUnlocked(false);
       }
     } else {
-      setIsContactUnlocked(false); // Not a client or no user, so contact is not unlocked
+      setIsContactUnlocked(false);
       setUnlockedContactRecord(null);
     }
     setLoading(false);
@@ -123,17 +148,12 @@ const ProviderDetail = () => {
     try {
       const { data: result, error: unlockError } = await supabase.rpc('unlock_provider_contact', { provider_id_in: id });
 
-      if (unlockError) {
-        throw unlockError;
-      }
+      if (unlockError) throw unlockError;
 
       dismissToast(toastId);
-      showSuccess(result); // "DESBLOQUEO EXITOSO" or "CONTACTO YA DESBLOQUEADO"
+      showSuccess(result);
       
-      // Refresh client's profile to update token balance
       await refreshProfile(); 
-      
-      // Re-fetch provider and unlocked status to update UI
       await fetchProviderAndUnlockedStatus();
 
     } catch (err: unknown) {
@@ -146,9 +166,7 @@ const ProviderDetail = () => {
   const handleFeedbackSubmitted = async () => {
     setIsFeedbackDialogOpen(false);
     showSuccess('¡Gracias por tu comentario!');
-    // Re-fetch provider and unlocked status to update UI (blur contact, update feedback count/rating)
     await fetchProviderAndUnlockedStatus();
-    // Also refresh client profile to ensure token balance is correct (though it shouldn't change here)
     await refreshProfile();
   };
 
@@ -282,6 +300,27 @@ const ProviderDetail = () => {
                 )}
               </ScrollArea>
             </div>
+
+            {user && provider && user.id === provider.id && (
+              <div className="space-y-2 pt-4 border-t">
+                <p className="font-semibold text-gray-700">Clientes solicitando servicio</p>
+                <ScrollArea className="h-48 w-full rounded-md border p-4 bg-gray-50">
+                  {clientsLoading ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p>
+                  ) : requestingClients.length > 0 ? (
+                    requestingClients.map((client) => (
+                      <div key={client.id} className="mb-3 pb-3 border-b last:border-b-0">
+                        <p className="text-sm font-semibold">{client.name}</p>
+                        <p className="text-xs text-muted-foreground">Tel: {client.phone}</p>
+                        <p className="text-xs text-muted-foreground">Correo: {client.email}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>
+                  )}
+                </ScrollArea>
+              </div>
+            )}
           </CardContent>
         </Card>
       </main>
