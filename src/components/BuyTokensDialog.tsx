@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
-import { supabase } => '@/integrations/supabase/client';
+import { supabase } from '@/integrations/supabase/client'; // Corregido: de '=>' a 'from'
 import { useAuth } from '@/context/AuthContext';
 
 interface BuyTokensDialogProps {
@@ -51,7 +51,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
   };
 
   const handleBuyTokens = async () => {
-    if (!user || !usdAmount || usdAmount < 10 || error) {
+    if (!user || usdAmount === '' || usdAmount < 10 || error) { // Asegurar que usdAmount no sea ''
       showError(String(error || 'Por favor, introduce un monto válido (mínimo 10 USD).'));
       return;
     }
@@ -114,7 +114,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
               type="number"
               step="0.01"
               min="10"
-              value={String(usdAmount)}
+              value={usdAmount === '' ? '' : usdAmount.toString()} // Conversión explícita a string
               onChange={handleUsdChange}
               className="col-span-3"
               placeholder="Ej: 10.00"
@@ -128,7 +128,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
             </Label>
             <Input
               id="tokens"
-              value={String(tokensToReceive)}
+              value={tokensToReceive.toString()} // Conversión explícita a string
               readOnly
               className="col-span-3 bg-gray-100"
               disabled={isProcessing}
@@ -140,7 +140,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isProcessing}>Cancelar</Button>
-          <Button onClick={handleBuyTokens} disabled={!usdAmount || usdAmount < 10 || !!error || isProcessing}>
+          <Button onClick={handleBuyTokens} disabled={usdAmount === '' || usdAmount < 10 || !!error || isProcessing}>
             {isProcessing ? 'Procesando...' : `Comprar ${tokensToReceive > 0 ? `${tokensToReceive.toString()} Tokens` : ''}`}
           </Button>
         </DialogFooter>

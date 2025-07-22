@@ -196,7 +196,7 @@ const ProviderDetail = () => {
                           : 'text-gray-300'
                       }`}
                     />
-                  )}
+                  ))}
                   {provider.rate && <span className="ml-3 text-lg text-gray-700">~ ${provider.rate} BCV</span>}
                 </div>
               </div>
