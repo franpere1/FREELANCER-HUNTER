@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button }mp; from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import { Star, Phone, Mail } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
@@ -82,7 +82,7 @@ const ProviderDetail = () => {
       }
 
       // Contact is visible if it's unlocked in DB. The feedback status only affects the feedback button.
-      setIsContactVisible(unlockedFromDB); // <--- CAMBIO CLAVE AQUÍ: Eliminado '&& !feedbackGiven'
+      setIsContactVisible(unlockedFromDB); 
       setHasSubmittedFeedback(feedbackGiven);
     }
     setLoading(false);
