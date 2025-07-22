@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Edit, Star, Phone, Mail } from 'lucide-react';
-import { ScrollArea } => '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area'; {/* <-- CORREGIDO AQUÍ */}
 import { useEffect, useState } from 'react';
 import LatestProviders from '@/components/LatestProviders';
 import BuyTokensDialog from '@/components/BuyTokensDialog';
