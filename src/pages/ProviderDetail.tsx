@@ -125,7 +125,7 @@ const ProviderDetail = () => {
         // No es estrictamente necesario llamar a fetchProviderAndUnlockStatus aquí para la visibilidad,
         // ya que la hemos establecido directamente. Se llamará en el siguiente render o si otros estados cambian.
         // Sin embargo, la mantenemos para asegurar que todos los datos estén frescos, incluyendo los comentarios del proveedor.
-        await fetchProviderAndUnlockStatus(); 
+        // Eliminado: await fetchProviderAndUnlockStatus(); // Esto causaba el re-difuminado inmediato
       } else if (data === 'CONTACTO YA DESBLOQUEADO') {
         // Si ya estaba desbloqueado, aún queremos mostrarlo como visible.
         // fetchProviderAndUnlockStatus se encargará de determinar si debe ser visible
