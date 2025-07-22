@@ -86,17 +86,35 @@ const ProviderDetail = () => {
 
     if (user && providerData && user.id === providerData.id) {
       setClientsLoading(true);
-      const { data: clientsData, error: clientsError } = await supabase
+      // Step 1: Fetch the client_ids from unlocked_contacts
+      const { data: unlockedData, error: unlockedError } = await supabase
         .from('unlocked_contacts')
-        .select('profiles(id, name, phone, email)')
+        .select('client_id')
         .eq('provider_id', providerData.id);
 
-      if (clientsError) {
-        console.error("Error fetching requesting clients:", clientsError);
-        showError('Error al cargar los clientes solicitantes.');
+      if (unlockedError) {
+        console.error("Error fetching unlocked contacts:", unlockedError);
+        showError('Error al cargar la lista de clientes.');
+        setRequestingClients([]);
       } else {
-        const clients = clientsData.map(item => item.profiles).filter(Boolean);
-        setRequestingClients(clients as RequestingClient[]);
+        const clientIds = unlockedData.map(uc => uc.client_id);
+        if (clientIds.length > 0) {
+          // Step 2: Fetch the profiles for those client_ids
+          const { data: clientsData, error: clientsError } = await supabase
+            .from('profiles')
+            .select('id, name, phone, email')
+            .in('id', clientIds);
+
+          if (clientsError) {
+            console.error("Error fetching client profiles:", clientsError);
+            showError('Error al cargar los perfiles de los clientes.');
+            setRequestingClients([]);
+          } else {
+            setRequestingClients(clientsData as RequestingClient[]);
+          }
+        } else {
+          setRequestingClients([]);
+        }
       }
       setClientsLoading(false);
     } else {
