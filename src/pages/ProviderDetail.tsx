@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'; // Importar useCallback
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
@@ -38,7 +38,7 @@ const ProviderDetail = () => {
   const [isContactUnlocked, setIsContactUnlocked] = useState(false);
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false); // Nuevo estado para el diálogo de feedback
 
-  const fetchProviderAndUnlockStatus = async () => {
+  const fetchProviderAndUnlockStatus = useCallback(async () => {
     if (!id) {
       showError('ID de proveedor no encontrado.');
       setLoading(false);
@@ -72,14 +72,17 @@ const ProviderDetail = () => {
         } else {
           setIsContactUnlocked(false);
         }
+      } else {
+        // If clientProfile or user are not available, assume not unlocked for safety
+        setIsContactUnlocked(false);
       }
     }
     setLoading(false);
-  };
+  }, [id, user, clientProfile]); // Dependencias para useCallback
 
   useEffect(() => {
     fetchProviderAndUnlockStatus();
-  }, [id, user, clientProfile]); // Dependencias actualizadas
+  }, [fetchProviderAndUnlockStatus]); // Ahora useEffect depende de la función memoizada
 
   const getInitials = (name: string) => {
     if (!name) return '';
