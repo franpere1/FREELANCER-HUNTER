@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { venezuelaStates, citiesByState } from '@/lib/venezuela-data';
+import { venezuelaStates } from '@/lib/venezuela-data';
 import { showError, showSuccess } from '@/utils/toast';
 
 const baseSchema = z.object({
@@ -21,7 +21,7 @@ const baseSchema = z.object({
   lastName: z.string().min(2, { message: 'El apellido es requerido' }),
   phone: z.string().min(10, { message: 'El teléfono es requerido' }),
   state: z.string({ required_error: 'Seleccione un estado' }),
-  city: z.string({ required_error: 'Seleccione una ciudad' }),
+  city: z.string().min(2, { message: 'La ciudad es requerida' }),
 });
 
 const clientSchema = baseSchema;
@@ -36,14 +36,11 @@ type ProviderFormData = z.infer<typeof providerSchema>;
 const SignUp = () => {
   const navigate = useNavigate();
   const [userType, setUserType] = useState<'client' | 'provider'>('client');
-  const [selectedState, setSelectedState] = useState('');
 
   const currentSchema = userType === 'client' ? clientSchema : providerSchema;
-  const { register, handleSubmit, formState: { errors }, control, setValue, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue } = useForm({
     resolver: zodResolver(currentSchema),
   });
-
-  const watchedState = watch('state');
 
   const onSubmit = async (data: ClientFormData | ProviderFormData) => {
     const { email, password, name, lastName, ...rest } = data;
@@ -81,25 +78,21 @@ const SignUp = () => {
           onSubmit={handleSubmit(onSubmit)}
           register={register}
           errors={errors}
-          control={control}
           setValue={setValue}
-          watchedState={watchedState}
         />
         <SignUpForm
           type="provider"
           onSubmit={handleSubmit(onSubmit)}
           register={register}
           errors={errors}
-          control={control}
           setValue={setValue}
-          watchedState={watchedState}
         />
       </Tabs>
     </div>
   );
 };
 
-const SignUpForm = ({ type, onSubmit, register, errors, control, setValue, watchedState }: any) => (
+const SignUpForm = ({ type, onSubmit, register, errors, setValue }: any) => (
   <TabsContent value={type}>
     <Card>
       <CardHeader>
@@ -146,13 +139,8 @@ const SignUpForm = ({ type, onSubmit, register, errors, control, setValue, watch
               {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state.message}</p>}
             </div>
             <div>
-              <Label>Ciudad</Label>
-              <Select onValueChange={(value) => setValue('city', value, { shouldValidate: true })} disabled={!watchedState}>
-                <SelectTrigger><SelectValue placeholder="Seleccione ciudad" /></SelectTrigger>
-                <SelectContent>
-                  {watchedState && citiesByState[watchedState]?.map(city => <SelectItem key={city} value={city}>{city}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="city">Ciudad</Label>
+              <Input id="city" {...register('city')} />
               {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
             </div>
           </div>
