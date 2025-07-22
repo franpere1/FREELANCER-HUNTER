@@ -284,7 +284,24 @@ const Dashboard = () => {
           {profile.type === 'client' ? (
             <Card className="flex flex-col"><CardHeader><CardTitle>Comprar Tokens</CardTitle></CardHeader><CardContent className="flex flex-col items-center justify-center flex-grow text-center"><p className="text-muted-foreground mb-4">Desbloquea contactos de proveedores y accede a más funciones.</p><Button className="w-full" onClick={() => setIsBuyTokensDialogOpen(true)}>Comprar Tokens</Button></CardContent></Card>
           ) : (
-            <Card><CardHeader><CardTitle>Comentarios Recientes</CardTitle></CardHeader><CardContent><ScrollArea className="h-64 pr-4">{profile.feedback && profile.feedback.length > 0 ? [...profile.feedback].reverse().map((fb: any) => <div key={fb.id} className="mb-3 pb-3 border-b last:border-b-0"><p className="text-sm font-medium">{fb.comment}</p><p className="text-xs text-muted-foreground">{new Date(fb.timestamp).toLocaleDateString()} - <span className={fb.type === 'positive' ? 'text-green-600' : 'text-red-600'}>{fb.type}</span></p></div>) : <p className="text-sm text-muted-foreground text-center py-8">No tienes comentarios aún.</p>}</ScrollArea></CardContent></Card>
+            <div className="flex flex-col gap-8">
+              <Card>
+                <CardHeader><CardTitle>Comentarios Recientes</CardTitle></CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-64 pr-4">
+                    {profile.feedback && profile.feedback.length > 0 ? [...profile.feedback].reverse().map((fb: any) => <div key={fb.id} className="mb-3 pb-3 border-b last:border-b-0"><p className="text-sm font-medium">{fb.comment}</p><p className="text-xs text-muted-foreground">{new Date(fb.timestamp).toLocaleDateString()} - <span className={fb.type === 'positive' ? 'text-green-600' : 'text-red-600'}>{fb.type}</span></p></div>) : <p className="text-sm text-muted-foreground text-center py-8">No tienes comentarios aún.</p>}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle>Últimos Servicios Solicitados</CardTitle></CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Aquí se mostrará un resumen de los últimos servicios que te han solicitado.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
           )}
         </div>
 
