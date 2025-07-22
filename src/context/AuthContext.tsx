@@ -28,36 +28,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [profileLoading, setProfileLoading] = useState(false);
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      try {
-        setSession(session);
-        setUser(session?.user ?? null);
-
-        if (session?.user) {
-          const { data: userProfile, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (error) {
-            console.error("Error fetching profile:", error);
-            setProfile(null);
-          } else {
-            setProfile(userProfile);
-          }
-        } else {
-          setProfile(null);
-        }
-      } catch (error) {
-        console.error("An unexpected error occurred in onAuthStateChange:", error);
-        setProfile(null);
-      } finally {
-        setLoading(false);
-      }
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
     });
 
     return () => {
@@ -65,11 +43,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  useEffect(() => {
+    if (user) {
+      setProfileLoading(true);
+      supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error("Error fetching profile:", error);
+            setProfile(null);
+          } else {
+            setProfile(data);
+          }
+          setProfileLoading(false);
+        });
+    } else {
+      setProfile(null);
+    }
+  }, [user]);
+
   const value = {
     session,
     user,
     profile,
-    loading,
+    loading: authLoading || profileLoading,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
