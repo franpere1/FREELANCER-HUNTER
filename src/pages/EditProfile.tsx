@@ -103,7 +103,7 @@ const EditProfile = () => {
 
     if (uploadError) {
       console.error('Upload error:', uploadError);
-      showError(String(`Error al subir la imagen: ${uploadError.message}`));
+      showError(`Error al subir la imagen: ${uploadError.message}`);
       return null;
     }
 
@@ -156,9 +156,10 @@ const EditProfile = () => {
       showSuccess('¡Perfil actualizado con éxito!');
       navigate('/dashboard');
 
-    } catch (error: any) {
+    } catch (err: unknown) { // Cambiado a unknown
       dismissToast(toastId);
-      showError(String((error as Error)?.message || error || 'Ocurrió un error al actualizar el perfil.')); // Casteo explícito
+      console.error('Error al actualizar perfil:', err);
+      showError(err instanceof Error ? err.message : String(err || 'Ocurrió un error al actualizar el perfil.'));
     }
   };
 

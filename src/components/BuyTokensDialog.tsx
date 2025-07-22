@@ -86,10 +86,10 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
       setUsdAmount('');
       setTokensToReceive(0);
       onClose();
-    } catch (err: any) {
+    } catch (err: unknown) { // Cambiado a unknown
       dismissToast(toastId);
       console.error('Error al comprar tokens:', err);
-      showError(String((err as Error)?.message || err || 'Error al procesar la compra: Inténtalo de nuevo.')); // Casteo explícito
+      showError(err instanceof Error ? err.message : String(err || 'Error al procesar la compra: Inténtalo de nuevo.'));
     } finally {
       setIsProcessing(false);
     }

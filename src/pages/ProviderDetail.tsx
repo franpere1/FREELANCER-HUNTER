@@ -126,10 +126,10 @@ const ProviderDetail = () => {
       } else {
         throw new Error('Respuesta inesperada del servidor.');
       }
-    } catch (err: any) {
+    } catch (err: unknown) { // Cambiado a unknown
       dismissToast(toastId);
       console.error('Error al desbloquear contacto:', err);
-      showError(String((err as Error)?.message || err || 'Ocurrió un error al desbloquear la información.')); // Casteo explícito
+      showError(err instanceof Error ? err.message : String(err || 'Ocurrió un error al desbloquear la información.'));
     }
   };
 
@@ -234,7 +234,7 @@ const ProviderDetail = () => {
                   Liberar información de contacto (1 Token)
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Tu saldo actual: {`${clientProfile?.token_balance ?? '0'}`} Tokens
+                  Tu saldo actual: {clientProfile?.token_balance?.toString() || '0'} Tokens
                 </p>
               </div>
             )}
