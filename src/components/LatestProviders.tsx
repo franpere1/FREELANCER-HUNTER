@@ -17,7 +17,6 @@ interface ProviderSummary {
 interface LatestProvidersProps {
   providers: ProviderSummary[];
   isLoading: boolean;
-  searchQuery?: string;
 }
 
 const getInitials = (name: string) => {
@@ -25,7 +24,7 @@ const getInitials = (name: string) => {
   return name.split(' ').map((n) => n[0]).join('');
 };
 
-const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading, searchQuery }) => {
+const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading }) => {
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -50,9 +49,7 @@ const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading,
   if (providers.length === 0) {
     return (
         <p className="text-muted-foreground text-center py-8">
-            {searchQuery 
-                ? 'No se encontraron proveedores que coincidan con su búsqueda.' 
-                : 'No hay proveedores registrados aún.'}
+            No hay proveedores registrados aún.
         </p>
     );
   }
