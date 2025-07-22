@@ -44,8 +44,9 @@ const EditProfile = () => {
 
   useEffect(() => {
     if (profile) {
-      setValue('name', profile.name);
-      setValue('phone', profile.phone);
+      // Aseguramos que los campos de texto se inicialicen con cadena vacía si son nulos
+      setValue('name', profile.name || '');
+      setValue('phone', profile.phone || '');
       setProfileImagePreview(profile.profile_image);
       if (profile.type === 'provider') {
         setValue('skill', profile.skill || '');
@@ -106,35 +107,24 @@ const EditProfile = () => {
     }
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-    console.log(`Public URL for ${bucket}:`, data.publicUrl);
     return data.publicUrl;
   };
 
   const onSubmit = async (data: EditProfileFormData) => {
-    console.log("onSubmit called with data:", data); // Nuevo log
-    if (!profile || !user) {
-      console.log("Profile or user not available, returning."); // Nuevo log
-      return;
-    }
+    if (!profile || !user) return;
 
     const toastId = showLoading('Actualizando perfil...');
     let profileImageUrl = profile.profile_image;
     let serviceImageUrl = profile.type === 'provider' ? profile.service_image : null;
 
     try {
-      console.log('Data received in onSubmit:', data);
-      console.log('profile_image_file in data:', data.profile_image_file);
-      console.log('service_image_file in data:', data.service_image_file);
-
       if (data.profile_image_file && data.profile_image_file.length > 0) {
-        console.log('Attempting to upload profile image...');
         const url = await uploadFile(data.profile_image_file[0], 'profile-images');
         if (url) profileImageUrl = url;
         else throw new Error("Error al subir la foto de perfil");
       }
 
       if (profile.type === 'provider' && data.service_image_file && data.service_image_file.length > 0) {
-        console.log('Attempting to upload service image...');
         const url = await uploadFile(data.service_image_file[0], 'service-images');
         if (url) serviceImageUrl = url;
         else throw new Error("Error al subir la foto del servicio");
@@ -153,19 +143,13 @@ const EditProfile = () => {
         updateData.service_image = serviceImageUrl;
       }
 
-      console.log('Data being sent to Supabase profiles table:', updateData);
-
       const { error } = await supabase
         .from('profiles')
         .update(updateData)
         .eq('id', user.id);
 
-      if (error) {
-        console.error("Supabase update error:", error); // Nuevo log
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log("Profile updated successfully in Supabase."); // Nuevo log
       await refreshProfile();
       dismissToast(toastId);
       showSuccess('¡Perfil actualizado con éxito!');
@@ -173,7 +157,6 @@ const EditProfile = () => {
 
     } catch (error: any) {
       dismissToast(toastId);
-      console.error("Error during profile update process:", error); // Nuevo log
       showError(error.message || 'Ocurrió un error al actualizar el perfil.');
     }
   };
