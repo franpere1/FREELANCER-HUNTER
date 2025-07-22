@@ -16,6 +16,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ThumbsUp, ThumbsDown, MinusCircle } from 'lucide-react'; // Importar los iconos
 
 const feedbackSchema = z.object({
   feedbackType: z.enum(['positive', 'negative', 'neutral'], {
@@ -93,9 +94,21 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
                 <SelectValue placeholder="Selecciona un tipo" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="positive">Positivo</SelectItem>
-                <SelectItem value="negative">Negativo</SelectItem>
-                <SelectItem value="neutral">Neutral</SelectItem>
+                <SelectItem value="positive">
+                  <div className="flex items-center">
+                    <ThumbsUp className="mr-2 h-4 w-4 text-green-500" /> Positivo
+                  </div>
+                </SelectItem>
+                <SelectItem value="negative">
+                  <div className="flex items-center">
+                    <ThumbsDown className="mr-2 h-4 w-4 text-red-500" /> Negativo
+                  </div>
+                </SelectItem>
+                <SelectItem value="neutral">
+                  <div className="flex items-center">
+                    <MinusCircle className="mr-2 h-4 w-4 text-gray-500" /> Neutral
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
             {errors.feedbackType && <p className="text-red-500 text-xs mt-1">{errors.feedbackType.message}</p>}
