@@ -17,6 +17,8 @@ const Dashboard = () => {
   const [latestProviders, setLatestProviders] = useState<any[]>([]);
   const [providersLoading, setProvidersLoading] = useState(true);
   const [isBuyTokensDialogOpen, setIsBuyTokensDialogOpen] = useState(false);
+  const [requestingClients, setRequestingClients] = useState<any[]>([]);
+  const [clientsLoading, setClientsLoading] = useState(true);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -43,7 +45,41 @@ const Dashboard = () => {
       }
     };
 
+    const fetchRequestingClients = async () => {
+      if (profile && profile.type === 'provider') {
+        setClientsLoading(true);
+        const { data: unlockedData, error: unlockedError } = await supabase
+          .from('unlocked_contacts')
+          .select('client_id')
+          .eq('provider_id', profile.id);
+
+        if (unlockedError) {
+          console.error("Error fetching unlocked contacts:", unlockedError);
+          setRequestingClients([]);
+        } else {
+          const clientIds = unlockedData.map(uc => uc.client_id);
+          if (clientIds.length > 0) {
+            const { data: clientsData, error: clientsError } = await supabase
+              .from('profiles')
+              .select('id, name, phone, email')
+              .in('id', clientIds);
+
+            if (clientsError) {
+              console.error("Error fetching client profiles:", clientsError);
+              setRequestingClients([]);
+            } else {
+              setRequestingClients(clientsData || []);
+            }
+          } else {
+            setRequestingClients([]);
+          }
+        }
+        setClientsLoading(false);
+      }
+    };
+
     fetchLatestProviders();
+    fetchRequestingClients();
   }, [profile]);
 
   if (loading) {
@@ -215,6 +251,33 @@ const Dashboard = () => {
         {profile.type === 'client' && (
           <div className="mt-8">
             <LatestProviders providers={latestProviders} isLoading={providersLoading} />
+          </div>
+        )}
+
+        {profile.type === 'provider' && (
+          <div className="mt-8">
+            <Card>
+              <CardHeader>
+                <CardTitle>Clientes Solicitando Servicio</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-64 pr-4">
+                  {clientsLoading ? (
+                    <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p>
+                  ) : requestingClients.length > 0 ? (
+                    requestingClients.map((client: any) => (
+                      <div key={client.id} className="mb-3 pb-3 border-b last:border-b-0">
+                        <p className="text-sm font-semibold">{client.name}</p>
+                        <p className="text-xs text-muted-foreground">Tel: {client.phone}</p>
+                        <p className="text-xs text-muted-foreground">Correo: {client.email}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
           </div>
         )}
       </main>
