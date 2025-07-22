@@ -1,27 +1,24 @@
-import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from './ui/button';
 import { LogOut, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { showError } from '@/utils/toast';
 
 const Header = () => {
-  const navigate = useNavigate();
+  const { logout } = useAuth();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    const { error } = await supabase.auth.signOut();
-    
-    if (error) {
+    try {
+      await logout();
+      // The redirect is now fully handled by the AuthContext state change
+      // and the ProtectedRoute component.
+    } catch (error) {
       showError('Error al cerrar sesión. Por favor, inténtalo de nuevo.');
       console.error('Error logging out:', error);
+      setIsLoggingOut(false); // Only reset on error, as success causes unmount
     }
-    
-    // Navigate to the login page regardless of the outcome.
-    // The AuthProvider will re-evaluate the session state on that page.
-    navigate('/login');
-    setIsLoggingOut(false);
   };
 
   return (

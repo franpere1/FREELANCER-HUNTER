@@ -27,6 +27,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   refreshProfile: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,6 +51,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } else {
       setProfile(data as Profile);
     }
+  }, []);
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    // Manually clear session to ensure immediate UI update and prevent flicker
+    setSession(null);
+    setUser(null);
+    setProfile(null);
   }, []);
 
   // Effect for handling auth state changes
@@ -117,7 +126,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, fetchProfile]);
 
-  const value = useMemo(() => ({ session, user, profile, loading, refreshProfile }), [session, user, profile, loading, refreshProfile]);
+  const value = useMemo(() => ({ session, user, profile, loading, refreshProfile, logout }), [session, user, profile, loading, refreshProfile, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
