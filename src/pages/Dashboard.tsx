@@ -70,10 +70,10 @@ const Dashboard = () => {
                   <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                  <CardTitle className="text-2xl flex items-center space-x-2"> {/* Añadido flex para alinear */}
+                  <CardTitle className="text-2xl flex items-center space-x-2">
                     <span>{profile.name}</span>
                     {profile.type === 'client' && (
-                      <span className="text-blue-600 text-base font-semibold">TOKEN</span>
+                      <span className="text-blue-600 text-base font-semibold ml-4">TOKEN</span> {/* Ajustado el margen izquierdo */}
                     )}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">{profile.email}</p>
