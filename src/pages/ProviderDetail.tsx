@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
@@ -7,8 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
+import FeedbackDialog from '@/components/FeedbackDialog'; // Importar el nuevo componente
 
 interface ProviderProfile {
   id: string;
@@ -27,45 +28,128 @@ interface ProviderProfile {
   feedback: any[] | null;
 }
 
+interface UnlockedContact {
+  id: number;
+  client_id: string;
+  provider_id: string;
+  last_unlocked_at: string;
+  feedback_submitted_for_this_unlock: boolean;
+}
+
 const ProviderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { loading: authLoading } = useAuth();
+  const { profile: clientProfile, user, loading: authLoading, refreshProfile } = useAuth();
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProvider = async () => {
-      if (!id) {
-        showError('ID de proveedor no encontrado.');
-        setLoading(false);
-        return;
-      }
-
-      setLoading(true);
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .single();
-
-      if (error) {
-        console.error("Error fetching provider:", error);
-        showError('Error al cargar la información del proveedor.');
-        setProvider(null);
-      } else {
-        setProvider(data);
-      }
-      setLoading(false);
-    };
-
-    fetchProvider();
-  }, [id]);
+  const [isContactUnlocked, setIsContactUnlocked] = useState(false);
+  const [unlockedContactRecord, setUnlockedContactRecord] = useState<UnlockedContact | null>(null);
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
 
   const getInitials = (name: string) => {
     if (!name) return '';
     return name.split(' ').map((n) => n[0]).join('');
+  };
+
+  const fetchProviderAndUnlockedStatus = useCallback(async () => {
+    if (!id) {
+      showError('ID de proveedor no encontrado.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    
+    // Fetch provider details
+    const { data: providerData, error: providerError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (providerError) {
+      console.error("Error fetching provider:", providerError);
+      showError('Error al cargar la información del proveedor.');
+      setProvider(null);
+      setLoading(false);
+      return;
+    }
+    setProvider(providerData);
+
+    // If current user is a client, check unlocked status
+    if (clientProfile && clientProfile.type === 'client' && user) {
+      const { data: unlockedContact, error: unlockedError } = await supabase
+        .from('unlocked_contacts')
+        .select('*')
+        .eq('client_id', user.id)
+        .eq('provider_id', id)
+        .single();
+
+      if (unlockedError && unlockedError.code !== 'PGRST116') { // PGRST116 means no rows found
+        console.error("Error fetching unlocked contact:", unlockedError);
+      }
+
+      if (unlockedContact) {
+        setUnlockedContactRecord(unlockedContact);
+        // Contact is visible if it was previously unlocked AND feedback has NOT been submitted for this unlock cycle
+        setIsContactUnlocked(!unlockedContact.feedback_submitted_for_this_unlock);
+      } else {
+        setUnlockedContactRecord(null);
+        setIsContactUnlocked(false); // Not unlocked yet
+      }
+    } else {
+      setIsContactUnlocked(false); // Not a client or no user, so contact is not unlocked
+      setUnlockedContactRecord(null);
+    }
+    setLoading(false);
+  }, [id, clientProfile, user]);
+
+  useEffect(() => {
+    fetchProviderAndUnlockedStatus();
+  }, [fetchProviderAndUnlockedStatus]);
+
+  const handleUnlockContact = async () => {
+    if (!user || clientProfile?.type !== 'client' || !id) {
+      showError('Debes ser un cliente para desbloquear contactos.');
+      return;
+    }
+
+    if ((clientProfile.token_balance || 0) < 1) {
+      showError('No tienes suficientes tokens para desbloquear este contacto.');
+      return;
+    }
+
+    const toastId = showLoading('Desbloqueando contacto...');
+    try {
+      const { data: result, error: unlockError } = await supabase.rpc('unlock_provider_contact', { provider_id_in: id });
+
+      if (unlockError) {
+        throw unlockError;
+      }
+
+      dismissToast(toastId);
+      showSuccess(result); // "DESBLOQUEO EXITOSO" or "CONTACTO YA DESBLOQUEADO"
+      
+      // Refresh client's profile to update token balance
+      await refreshProfile(); 
+      
+      // Re-fetch provider and unlocked status to update UI
+      await fetchProviderAndUnlockedStatus();
+
+    } catch (err: unknown) {
+      dismissToast(toastId);
+      console.error('Error al desbloquear contacto:', err);
+      showError(err instanceof Error ? err.message : String(err || 'Error al desbloquear el contacto.'));
+    }
+  };
+
+  const handleFeedbackSubmitted = async () => {
+    setIsFeedbackDialogOpen(false);
+    showSuccess('¡Gracias por tu comentario!');
+    // Re-fetch provider and unlocked status to update UI (blur contact, update feedback count/rating)
+    await fetchProviderAndUnlockedStatus();
+    // Also refresh client profile to ensure token balance is correct (though it shouldn't change here)
+    await refreshProfile();
   };
 
   if (loading || authLoading) {
@@ -91,6 +175,10 @@ const ProviderDetail = () => {
       </div>
     );
   }
+
+  const isClient = clientProfile?.type === 'client';
+  const canShowContactButton = isClient && !isContactUnlocked;
+  const canShowFeedbackButton = isClient && isContactUnlocked && unlockedContactRecord && !unlockedContactRecord.feedback_submitted_for_this_unlock;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -121,7 +209,7 @@ const ProviderDetail = () => {
                           : 'text-gray-300'
                       }`}
                     />
-                  ))}
+                  )}
                   {provider.rate && <span className="ml-3 text-lg text-gray-700">~ ${provider.rate} BCV</span>}
                 </div>
               </div>
@@ -139,13 +227,31 @@ const ProviderDetail = () => {
               </div>
               <div>
                 <p className="font-semibold text-gray-700">Teléfono:</p>
-                <p>{provider.phone}</p>
+                <p className={isClient && !isContactUnlocked ? 'blur-sm' : ''}>{provider.phone}</p>
               </div>
               <div>
                 <p className="font-semibold text-gray-700">Correo:</p>
-                <p>{provider.email}</p>
+                <p className={isClient && !isContactUnlocked ? 'blur-sm' : ''}>{provider.email}</p>
               </div>
             </div>
+
+            {isClient && (
+              <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
+                {canShowContactButton && (
+                  <Button onClick={handleUnlockContact} className="w-full sm:w-auto" disabled={(clientProfile?.token_balance || 0) < 1}>
+                    Mostrar Contacto (1 Token)
+                  </Button>
+                )}
+                {canShowFeedbackButton && (
+                  <Button variant="secondary" onClick={() => setIsFeedbackDialogOpen(true)} className="w-full sm:w-auto">
+                    Calificar
+                  </Button>
+                )}
+                {isContactUnlocked && !canShowFeedbackButton && unlockedContactRecord?.feedback_submitted_for_this_unlock && (
+                  <p className="text-sm text-muted-foreground italic">Ya has calificado a este proveedor para este desbloqueo. Puedes volver a desbloquearlo si lo necesitas.</p>
+                )}
+              </div>
+            )}
 
             <div className="space-y-2 pt-4 border-t">
               <p className="font-semibold text-gray-700">Descripción del Servicio</p>
@@ -172,13 +278,23 @@ const ProviderDetail = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-sm text-muted-foreground">No hay comentarios aún para este proveedor.</p>
+                  <p className="text-sm text-muted-foreground text-center py-8">No hay comentarios aún para este proveedor.</p>
                 )}
               </ScrollArea>
             </div>
           </CardContent>
         </Card>
       </main>
+
+      {isClient && user && provider && (
+        <FeedbackDialog
+          isOpen={isFeedbackDialogOpen}
+          onClose={() => setIsFeedbackDialogOpen(false)}
+          providerId={provider.id}
+          clientId={user.id}
+          onFeedbackSubmitted={handleFeedbackSubmitted}
+        />
+      )}
     </div>
   );
 };
