@@ -30,7 +30,7 @@ type EditProfileFormData = z.infer<typeof editProfileSchema>;
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const { profile, user, loading } = useAuth();
+  const { profile, user, loading, refreshProfile } = useAuth(); // Obtenemos refreshProfile
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [serviceImagePreview, setServiceImagePreview] = useState<string | null>(null);
 
@@ -125,6 +125,7 @@ const EditProfile = () => {
 
       if (error) throw error;
 
+      await refreshProfile(); // Llamamos a la función para refrescar el perfil
       dismissToast(toastId);
       showSuccess('¡Perfil actualizado con éxito!');
       navigate('/dashboard');
