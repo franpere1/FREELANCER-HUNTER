@@ -7,7 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Star, Phone, Mail } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { showError } from '@/utils/toast';
+import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
+import { useAuth } from '@/context/AuthContext';
+import { cn } from '@/lib/utils'; // Importar la utilidad cn
 
 interface ProviderProfile {
   id: string;
@@ -29,11 +31,13 @@ interface ProviderProfile {
 const ProviderDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user, profile: clientProfile, loading: authLoading, refreshProfile } = useAuth();
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isContactUnlocked, setIsContactUnlocked] = useState(false);
 
   useEffect(() => {
-    const fetchProvider = async () => {
+    const fetchProviderAndUnlockStatus = async () => {
       if (!id) {
         showError('ID de proveedor no encontrado.');
         setLoading(false);
@@ -53,19 +57,72 @@ const ProviderDetail = () => {
         setProvider(null);
       } else {
         setProvider(data);
+        // Check if contact is already unlocked for the current client
+        if (clientProfile && clientProfile.type === 'client' && user) {
+          const { data: unlockedData, error: unlockedError } = await supabase
+            .from('unlocked_contacts')
+            .select('id')
+            .eq('client_id', user.id)
+            .eq('provider_id', id)
+            .single();
+
+          if (!unlockedError && unlockedData) {
+            setIsContactUnlocked(true);
+          } else {
+            setIsContactUnlocked(false);
+          }
+        }
       }
       setLoading(false);
     };
 
-    fetchProvider();
-  }, [id]);
+    fetchProviderAndUnlockStatus();
+  }, [id, user, clientProfile]); // Dependencias actualizadas
 
   const getInitials = (name: string) => {
     if (!name) return '';
     return name.split(' ').map((n) => n[0]).join('');
   };
 
-  if (loading) {
+  const handleUnlockContact = async () => {
+    if (!user || !clientProfile || clientProfile.type !== 'client') {
+      showError('Debes ser un cliente para desbloquear contactos.');
+      return;
+    }
+    if (!id) {
+      showError('ID de proveedor no encontrado.');
+      return;
+    }
+
+    const toastId = showLoading('Desbloqueando información de contacto...');
+
+    try {
+      const { data, error } = await supabase.rpc('unlock_provider_contact', { provider_id_in: id });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data === 'CONTACTO YA DESBLOQUEADO') {
+        dismissToast(toastId);
+        showSuccess('La información de contacto ya está desbloqueada.');
+        setIsContactUnlocked(true); // Asegurarse de que el estado sea verdadero
+      } else if (data === 'DESBLOQUEO EXITOSO') {
+        await refreshProfile(); // Actualizar el saldo de tokens del cliente
+        dismissToast(toastId);
+        showSuccess('¡Información de contacto desbloqueada con éxito!');
+        setIsContactUnlocked(true);
+      } else {
+        throw new Error('Respuesta inesperada del servidor.');
+      }
+    } catch (err: any) {
+      dismissToast(toastId);
+      console.error('Error al desbloquear contacto:', err);
+      showError(err.message || 'Ocurrió un error al desbloquear la información.');
+    }
+  };
+
+  if (loading || authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50">
         Cargando información del proveedor...
@@ -88,6 +145,10 @@ const ProviderDetail = () => {
       </div>
     );
   }
+
+  const isClient = clientProfile?.type === 'client';
+  const canUnlock = isClient && !isContactUnlocked;
+  const showBlurred = isClient && !isContactUnlocked;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -137,14 +198,29 @@ const ProviderDetail = () => {
               <div className="flex items-center space-x-2">
                 <Phone className="h-5 w-5 text-gray-600" />
                 <p className="font-semibold text-gray-700">Teléfono:</p>
-                <p>{provider.phone}</p>
+                <p className={cn(showBlurred && 'blur-sm select-none')}>
+                  {provider.phone}
+                </p>
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-5 w-5 text-gray-600" />
                 <p className="font-semibold text-gray-700">Correo:</p>
-                <p>{provider.email}</p>
+                <p className={cn(showBlurred && 'blur-sm select-none')}>
+                  {provider.email}
+                </p>
               </div>
             </div>
+
+            {canUnlock && (
+              <div className="text-center pt-4 border-t">
+                <Button onClick={handleUnlockContact} className="w-full md:w-auto">
+                  Liberar información de contacto (1 Token)
+                </Button>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Tu saldo actual: {clientProfile?.token_balance !== null ? clientProfile?.token_balance : 0} Tokens
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2 pt-4 border-t">
               <p className="font-semibold text-gray-700">Descripción del Servicio</p>
