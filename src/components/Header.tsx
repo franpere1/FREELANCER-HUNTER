@@ -18,8 +18,8 @@ const Header = () => {
       setIsLoggingOut(false);
     }
     // The redirect is handled automatically by the AuthProvider and ProtectedRoute
-    // after the session state changes. We navigate to /login to be explicit and fast.
-    navigate('/login');
+    // after the session state changes. We navigate to / to be explicit and fast.
+    navigate('/');
   };
 
   return (
