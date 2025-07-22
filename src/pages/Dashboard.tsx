@@ -379,7 +379,7 @@ const Dashboard = () => {
         {profile.type === 'provider' && (
           <div className="mt-8">
             <Card>
-              <CardHeader><CardTitle>Últimos Servicios Requeridos</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Servicios activos</CardTitle></CardHeader>
               <CardContent>
                 <ScrollArea className="h-64 pr-4">
                   {clientsLoading ? (
