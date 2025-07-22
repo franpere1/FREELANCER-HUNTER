@@ -5,15 +5,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Star, Phone, Mail } from 'lucide-react'; // Importar Phone y Mail
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Edit, Star, Phone, Mail } from 'lucide-react';
+import { ScrollArea } => '@/components/ui/scroll-area';
 import { useEffect, useState } from 'react';
 import LatestProviders from '@/components/LatestProviders';
 import BuyTokensDialog from '@/components/BuyTokensDialog';
 
-// Nueva interfaz para los clientes que han desbloqueado el contacto
 interface UnlockedClient {
-  id: string; // client_id
+  id: string;
   name: string;
   email: string;
   phone: string;
@@ -26,8 +25,8 @@ const Dashboard = () => {
   const [latestProviders, setLatestProviders] = useState<any[]>([]);
   const [providersLoading, setProvidersLoading] = useState(true);
   const [isBuyTokensDialogOpen, setIsBuyTokensDialogOpen] = useState(false);
-  const [unlockedClients, setUnlockedClients] = useState<UnlockedClient[]>([]); // Nuevo estado para clientes desbloqueados
-  const [unlockedClientsLoading, setUnlockedClientsLoading] = useState(true); // Nuevo estado de carga
+  const [unlockedClients, setUnlockedClients] = useState<UnlockedClient[]>([]);
+  const [unlockedClientsLoading, setUnlockedClientsLoading] = useState(true);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -57,12 +56,11 @@ const Dashboard = () => {
     const fetchUnlockedClients = async () => {
       if (profile && profile.type === 'provider' && profile.id) {
         setUnlockedClientsLoading(true);
-        // Primero, obtener todos los client_ids que desbloquearon a este proveedor
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
           .select('client_id')
           .eq('provider_id', profile.id)
-          .eq('feedback_submitted_for_this_unlock', false); // <-- AÑADIDO: Filtrar por feedback_submitted_for_this_unlock = false
+          .eq('feedback_submitted_for_this_unlock', false);
 
         if (unlockedError) {
           console.error("Error fetching unlocked contacts:", unlockedError);
@@ -74,7 +72,6 @@ const Dashboard = () => {
         const clientIds = unlockedData.map(item => item.client_id);
 
         if (clientIds.length > 0) {
-          // Luego, obtener los perfiles de estos client_ids
           const { data: clientProfiles, error: profilesError } = await supabase
             .from('profiles')
             .select('id, name, email, phone, profile_image')
@@ -94,7 +91,7 @@ const Dashboard = () => {
     };
 
     fetchLatestProviders();
-    fetchUnlockedClients(); // Llamar a la nueva función de obtención de datos
+    fetchUnlockedClients();
   }, [profile]);
 
   if (loading) {
@@ -134,8 +131,8 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       <main className="container mx-auto p-4 md:p-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4"> {/* Contenedor principal para las tarjetas */}
-          <Card className="md:col-span-2"> {/* La tarjeta principal ocupa 2 columnas en pantallas medianas */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card className="md:col-span-2">
             <CardHeader className="relative">
               <div className="absolute top-4 right-4 flex items-center space-x-2">
                 {profile.type === 'client' && (
@@ -149,7 +146,6 @@ const Dashboard = () => {
                 </Button>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                {/* Columna Izquierda: Información del Perfil */}
                 <div className="flex items-center space-x-4">
                   <Avatar className="h-16 w-16">
                     <AvatarImage src={profile.profile_image || undefined} alt={profile.name} />
@@ -180,7 +176,6 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Columna Derecha: Comentarios (solo para proveedores) */}
                 {profile.type === 'provider' && (
                   <div className="flex flex-col items-start md:justify-self-end md:mt-0 mt-4">
                     <p className="font-semibold mb-2">Comentarios</p>
@@ -251,7 +246,7 @@ const Dashboard = () => {
           </Card>
 
           {profile.type === 'client' && (
-            <Card className="md:col-span-1 flex flex-col justify-between"> {/* Nueva tarjeta para "Comprar Token" */}
+            <Card className="md:col-span-1 flex flex-col justify-between">
               <CardHeader>
                 <CardTitle>Comprar Tokens</CardTitle>
               </CardHeader>
@@ -267,7 +262,7 @@ const Dashboard = () => {
           )}
 
           {profile.type === 'provider' && (
-            <Card className="md:col-span-1 flex flex-col"> {/* Nueva tarjeta para "Solicitudes de Servicio" */}
+            <Card className="md:col-span-1 flex flex-col">
               <CardHeader>
                 <CardTitle>Solicitudes de Servicio</CardTitle>
               </CardHeader>
@@ -277,7 +272,7 @@ const Dashboard = () => {
                 ) : unlockedClients.length === 0 ? (
                   <p className="text-muted-foreground">Nadie ha desbloqueado tu contacto aún.</p>
                 ) : (
-                  <ScrollArea className="h-64 pr-4"> {/* Usar ScrollArea para listas potencialmente largas */}
+                  <ScrollArea className="h-64 pr-4">
                     <div className="space-y-4">
                       {unlockedClients.map((client) => (
                         <div key={client.id} className="flex items-center space-x-4 p-3 border rounded-md shadow-sm">
