@@ -52,44 +52,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        const currentUser = session?.user;
-        setUser(currentUser ?? null);
-
-        if (currentUser) {
-          await fetchProfile(currentUser.id);
-        } else {
-          setProfile(null);
-        }
-      } catch (e) {
-        console.error("Error checking session:", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     setLoading(true);
-    checkSession();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
-      const currentUser = session?.user;
-      setUser(currentUser ?? null);
-
-      if (currentUser) {
-        await fetchProfile(currentUser.id);
-      } else {
-        setProfile(null);
-      }
+      setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, [fetchProfile]);
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchProfile(user.id);
+    } else {
+      setProfile(null);
+    }
+  }, [user, fetchProfile]);
 
   const refreshProfile = useCallback(async () => {
     if (user) {

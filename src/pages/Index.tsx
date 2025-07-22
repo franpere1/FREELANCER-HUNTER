@@ -15,7 +15,7 @@ const Index = () => {
     }
   }, [session, loading, navigate]);
 
-  if (loading || session) {
+  if (loading) {
     return <div>Cargando...</div>; // O un spinner de carga
   }
 
