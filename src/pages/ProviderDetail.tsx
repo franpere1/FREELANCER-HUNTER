@@ -178,9 +178,7 @@ const ProviderDetail = () => {
       const { data: result, error: unlockError } = await supabase.rpc('unlock_provider_contact', { provider_id_in: id });
       if (unlockError) throw unlockError;
 
-      // Optimistic Update: Show contact info immediately
       setIsContactUnlocked(true);
-
       dismissToast(toastId);
       
       if (typeof result === 'string' && result.startsWith('CONTACTO YA DESBLOQUEADO')) {
@@ -190,12 +188,14 @@ const ProviderDetail = () => {
       }
 
       await refreshProfile();
-      setRefetchTrigger(t => t + 1); // Refetch in background to get full record
-    } catch (err: unknown) {
+      setRefetchTrigger(t => t + 1);
+    } catch (err: any) {
       dismissToast(toastId);
       console.error('Error al desbloquear contacto:', err);
-      showError(err instanceof Error ? err.message : String(err || 'Error al desbloquear el contacto.'));
-      // Revert optimistic update on error
+      
+      const errorMessage = err.message || 'Error al desbloquear el contacto. Inténtalo de nuevo.';
+      showError(errorMessage);
+      
       setIsContactUnlocked(false);
     }
   };
