@@ -5,8 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Star } from 'lucide-react'; // Importar el icono Star
-import { ScrollArea } from '@/components/ui/scroll-area'; // Importar ScrollArea
+import { Edit, Star } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const Dashboard = () => {
   const { profile, loading } = useAuth();
@@ -73,7 +73,7 @@ const Dashboard = () => {
                   <CardTitle className="text-2xl flex items-center space-x-2">
                     <span>{profile.name}</span>
                     {profile.type === 'client' && (
-                      <span className="text-blue-600 text-base font-semibold ml-4">TOKEN</span> {/* Ajustado el margen izquierdo */}
+                      <span className="text-blue-600 text-base font-semibold ml-4">TOKEN</span>
                     )}
                   </CardTitle>
                   <p className="text-sm text-muted-foreground">{profile.email}</p>
