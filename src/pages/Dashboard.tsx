@@ -51,7 +51,8 @@ const Dashboard = () => {
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
           .select('client_id')
-          .eq('provider_id', profile.id);
+          .eq('provider_id', profile.id)
+          .eq('feedback_submitted_for_this_unlock', false); // <-- This is the key change
 
         if (unlockedError) {
           console.error("Error fetching unlocked contacts:", unlockedError);
