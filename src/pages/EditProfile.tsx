@@ -106,13 +106,19 @@ const EditProfile = () => {
     let serviceImageUrl = profile.type === 'provider' ? profile.service_image : null;
 
     try {
+      console.log('Data received in onSubmit:', data); // Nuevo log
+      console.log('profile_image_file in data:', data.profile_image_file); // Nuevo log
+      console.log('service_image_file in data:', data.service_image_file); // Nuevo log
+
       if (data.profile_image_file && data.profile_image_file.length > 0) {
+        console.log('Attempting to upload profile image...'); // Nuevo log
         const url = await uploadFile(data.profile_image_file[0], 'profile-images');
         if (url) profileImageUrl = url;
         else throw new Error("Error al subir la foto de perfil");
       }
 
       if (profile.type === 'provider' && data.service_image_file && data.service_image_file.length > 0) {
+        console.log('Attempting to upload service image...'); // Nuevo log
         const url = await uploadFile(data.service_image_file[0], 'service-images');
         if (url) serviceImageUrl = url;
         else throw new Error("Error al subir la foto del servicio");
@@ -182,10 +188,7 @@ const EditProfile = () => {
                   type="file"
                   accept="image/*"
                   {...register('profile_image_file')}
-                  onChange={(e) => {
-                    handleFileChange(e, 'profile');
-                    register('profile_image_file').onChange(e); // Llama al onChange de react-hook-form
-                  }}
+                  onChange={(e) => handleFileChange(e, 'profile')} // Simplificado
                 />
               </div>
             </div>
@@ -229,10 +232,7 @@ const EditProfile = () => {
                       type="file"
                       accept="image/*"
                       {...register('service_image_file')}
-                      onChange={(e) => {
-                        handleFileChange(e, 'service');
-                        register('service_image_file').onChange(e); // Llama al onChange de react-hook-form
-                      }}
+                      onChange={(e) => handleFileChange(e, 'service')} // Simplificado
                     />
                   </div>
                 </div>
