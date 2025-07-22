@@ -12,7 +12,7 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
-    "jsx": "react-jsx", // Asegúrate de que esta línea esté presente y configurada así
+    "jsx": "react-jsx", // ¡Esta línea es CRÍTICA!
     "paths": {
       "@/*": ["./src/*"]
     },
