@@ -125,47 +125,43 @@ const Dashboard = () => {
     if (!profile || profile.type !== 'provider') return;
     setLastRequestsLoading(true);
     try {
-      const { data: allUnlockData, error: unlockError } = await supabase
+      const { data: lastUnlockData, error: unlockError } = await supabase
         .from('unlocked_contacts')
         .select('client_id, last_unlocked_at')
         .eq('provider_id', profile.id)
-        .order('last_unlocked_at', { ascending: false });
+        .order('last_unlocked_at', { ascending: false })
+        .limit(5);
 
       if (unlockError) throw unlockError;
 
-      if (!allUnlockData || allUnlockData.length === 0) {
+      if (!lastUnlockData || lastUnlockData.length === 0) {
         setLastRequests([]);
         setLastRequestsLoading(false);
         return;
       }
 
-      const clientUnlockStats = allUnlockData.reduce((acc: any, unlock) => {
-        if (!acc[unlock.client_id]) {
-          acc[unlock.client_id] = { count: 0, last_unlocked_at: unlock.last_unlocked_at };
-        }
-        acc[unlock.client_id].count += 1;
-        return acc;
-      }, {});
+      const clientIds = [...new Set(lastUnlockData.map(u => u.client_id))];
 
-      const clientIds = Object.keys(clientUnlockStats);
-
-      const { data: clients, error: clientsError } = await supabase
+      const { data: clientsData, error: clientsError } = await supabase
         .from('profiles')
         .select('id, name, profile_image')
         .in('id', clientIds);
       
       if (clientsError) throw clientsError;
 
-      const combinedData = clients.map(client => ({
-        clientName: client.name || 'Cliente Desconocido',
-        clientProfileImage: client.profile_image,
-        count: clientUnlockStats[client.id].count,
-        last_unlocked_at: clientUnlockStats[client.id].last_unlocked_at,
-      }));
+      const clientsMap = new Map(clientsData.map(c => [c.id, c]));
 
-      combinedData.sort((a, b) => new Date(b.last_unlocked_at).getTime() - new Date(a.last_unlocked_at).getTime());
+      const combinedData = lastUnlockData.map((unlock, index) => {
+        const client = clientsMap.get(unlock.client_id);
+        return {
+          id: `${unlock.client_id}-${unlock.last_unlocked_at}-${index}`,
+          clientName: client?.name || 'Cliente Desconocido',
+          clientProfileImage: client?.profile_image,
+          last_unlocked_at: unlock.last_unlocked_at,
+        };
+      });
 
-      setLastRequests(combinedData.slice(0, 3));
+      setLastRequests(combinedData);
     } catch (error) {
       console.error("Error fetching last requests:", error);
       setLastRequests([]);
@@ -358,8 +354,8 @@ const Dashboard = () => {
                       <p className="text-sm text-muted-foreground text-center py-4">Cargando...</p>
                     ) : lastRequests.length > 0 ? (
                       <div className="space-y-4">
-                        {lastRequests.map((req, index) => (
-                          <div key={index} className="flex items-center space-x-3">
+                        {lastRequests.map((req) => (
+                          <div key={req.id} className="flex items-center space-x-3">
                             <Avatar className="h-10 w-10">
                               <AvatarImage src={req.clientProfileImage || undefined} alt={req.clientName} />
                               <AvatarFallback>{getInitials(req.clientName)}</AvatarFallback>
@@ -368,7 +364,6 @@ const Dashboard = () => {
                               <p className="text-sm font-semibold">{req.clientName}</p>
                               <p className="text-xs text-muted-foreground">
                                 Solicitó tu servicio de: <span className="font-medium">{profile.skill || 'General'}</span>
-                                {req.count > 1 && <span className="font-bold text-indigo-600"> ({req.count} veces)</span>}
                               </p>
                             </div>
                           </div>
