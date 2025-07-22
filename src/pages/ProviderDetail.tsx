@@ -5,7 +5,7 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Star } from 'lucide-react';
+import { Star, ThumbsUp, ThumbsDown, Meh } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
@@ -259,10 +259,34 @@ const ProviderDetail = () => {
             <div className="space-y-2 pt-4 border-t"><p className="font-semibold text-gray-700">Descripción del Servicio</p><p className="text-muted-foreground leading-relaxed">{provider.service_description || 'No hay descripción de servicio disponible.'}</p></div>
             {provider.service_image && <div className="space-y-2"><p className="font-semibold text-gray-700">Imagen del Servicio</p><img src={provider.service_image} alt="Servicio" className="rounded-lg max-w-md border shadow-sm" /></div>}
             <div className="space-y-2 pt-4 border-t">
-              <p className="font-semibold text-gray-700">Comentarios de Clientes</p>
-              <ScrollArea className="h-48 w-full rounded-md border p-4 bg-gray-50">
-                {provider.feedback && provider.feedback.length > 0 ? [...provider.feedback].reverse().map((fb: any) => <div key={fb.id} className="mb-3 pb-3 border-b last:border-b-0"><p className="text-sm font-medium">{fb.comment}</p><p className="text-xs text-muted-foreground">{new Date(fb.timestamp).toLocaleDateString()}</p></div>) : <p className="text-sm text-muted-foreground text-center py-8">No hay comentarios aún para este proveedor.</p>}
-              </ScrollArea>
+              <p className="font-semibold text-gray-700">Últimos 3 Comentarios</p>
+              <div className="space-y-4">
+                {provider.feedback && provider.feedback.length > 0 ? (
+                  [...provider.feedback]
+                    .reverse()
+                    .slice(0, 3)
+                    .map((fb: any) => (
+                      <div key={fb.id} className="p-3 rounded-md border bg-gray-50">
+                        <div className="flex items-center mb-1">
+                          {fb.type === 'positive' && <ThumbsUp className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />}
+                          {fb.type === 'negative' && <ThumbsDown className="h-4 w-4 text-red-500 mr-2 flex-shrink-0" />}
+                          {fb.type === 'neutral' && <Meh className="h-4 w-4 text-yellow-500 mr-2 flex-shrink-0" />}
+                          <p className="text-sm font-semibold capitalize">
+                            {fb.type === 'positive' && 'Positivo'}
+                            {fb.type === 'negative' && 'Negativo'}
+                            {fb.type === 'neutral' && 'Neutral'}
+                          </p>
+                        </div>
+                        <p className="text-sm text-muted-foreground ml-6">{fb.comment || 'El cliente no dejó un comentario escrito.'}</p>
+                        <p className="text-xs text-muted-foreground mt-1 ml-6">{new Date(fb.timestamp).toLocaleDateString()}</p>
+                      </div>
+                    ))
+                ) : (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    No hay comentarios aún para este proveedor.
+                  </p>
+                )}
+              </div>
             </div>
             {user && provider && user.id === provider.id && (
               <div className="space-y-2 pt-4 border-t">
