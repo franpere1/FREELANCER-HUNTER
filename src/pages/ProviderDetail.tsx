@@ -119,11 +119,13 @@ const ProviderDetail = () => {
         setClientsLoading(false);
       } else if (clientProfile && clientProfile.type === 'client') {
         // Logic for when a client views a provider's profile
+        // Check for an ACTIVE unlock (feedback not yet submitted)
         const { data: unlockedContact, error: unlockedError } = await supabase
           .from('unlocked_contacts')
           .select('*')
           .eq('client_id', user.id)
           .eq('provider_id', id)
+          .eq('feedback_submitted_for_this_unlock', false) // CRUCIAL: Only get active unlocks
           .single();
 
         if (unlockedContact && !unlockedError) {
