@@ -52,7 +52,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
 
   const handleBuyTokens = async () => {
     if (!user || !usdAmount || usdAmount < 10 || error) {
-      showError(error || 'Por favor, introduce un monto válido (mínimo 10 USD).');
+      showError(String(error || 'Por favor, introduce un monto válido (mínimo 10 USD).'));
       return;
     }
 
@@ -89,7 +89,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
     } catch (err: any) {
       dismissToast(toastId);
       console.error('Error al comprar tokens:', err);
-      showError((err as Error).message || 'Error al procesar la compra: Inténtalo de nuevo.'); // Casteo explícito
+      showError(String((err as Error).message || 'Error al procesar la compra: Inténtalo de nuevo.')); // Casteo explícito
     } finally {
       setIsProcessing(false);
     }

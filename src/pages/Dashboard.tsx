@@ -137,7 +137,7 @@ const Dashboard = () => {
               <div className="absolute top-4 right-4 flex items-center space-x-2">
                 {profile.type === 'client' && (
                   <span className="text-blue-600 text-base font-semibold">
-                    Tokens: {profile.token_balance !== null ? profile.token_balance : 0}
+                    Tokens: {profile.token_balance !== null ? profile.token_balance.toString() : '0'}
                   </span>
                 )}
                 <Button variant="outline" size="icon" onClick={() => navigate('/edit-profile')}>

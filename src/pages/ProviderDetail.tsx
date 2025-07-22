@@ -41,7 +41,7 @@ const ProviderDetail = () => {
 
   const fetchProviderAndUnlockStatus = useCallback(async () => {
     if (!id) {
-      showError('ID de proveedor no encontrado.');
+      showError(String('ID de proveedor no encontrado.'));
       setLoading(false);
       return;
     }
@@ -56,7 +56,7 @@ const ProviderDetail = () => {
 
     if (error) {
       console.error("Error fetching provider:", error);
-      showError('Error al cargar la información del proveedor.');
+      showError(String('Error al cargar la información del proveedor.'));
       setProvider(null);
       setIsContactVisible(false);
       setFeedbackSubmittedForCurrentUnlock(false);
@@ -96,11 +96,11 @@ const ProviderDetail = () => {
 
   const handleUnlockContact = async () => {
     if (!user || !clientProfile || clientProfile.type !== 'client') {
-      showError('Debes ser un cliente para desbloquear contactos.');
+      showError(String('Debes ser un cliente para desbloquear contactos.'));
       return;
     }
     if (!id) {
-      showError('ID de proveedor no encontrado.');
+      showError(String('ID de proveedor no encontrado.'));
       return;
     }
 
@@ -129,7 +129,7 @@ const ProviderDetail = () => {
     } catch (err: any) {
       dismissToast(toastId);
       console.error('Error al desbloquear contacto:', err);
-      showError((err as Error).message || 'Ocurrió un error al desbloquear la información.'); // Casteo explícito
+      showError(String((err as Error).message || 'Ocurrió un error al desbloquear la información.')); // Casteo explícito
     }
   };
 
@@ -196,7 +196,7 @@ const ProviderDetail = () => {
                           : 'text-gray-300'
                       }`}
                     />
-                  ))}
+                  )}
                   {provider.rate && <span className="ml-3 text-lg text-gray-700">~ ${provider.rate} BCV</span>}
                 </div>
               </div>
