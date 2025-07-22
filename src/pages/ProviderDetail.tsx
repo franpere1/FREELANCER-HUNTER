@@ -76,18 +76,13 @@ const ProviderDetail = () => {
 
   useEffect(() => {
     const fetchDetails = async () => {
+      if (!id || !user) {
+        setLoading(false);
+        return;
+      }
+      
       setLoading(true);
       try {
-        setProvider(null);
-        setIsContactUnlocked(false);
-        setUnlockedContactRecord(null);
-        setRequestingClients([]);
-        setClientsLoading(true);
-
-        if (!id || !user) {
-          return;
-        }
-
         const { data: providerData, error: providerError } = await supabase
           .from('profiles')
           .select('*')
@@ -97,6 +92,7 @@ const ProviderDetail = () => {
         if (providerError) {
           console.error("Error fetching provider:", providerError);
           showError('Error al cargar la información del proveedor.');
+          setProvider(null);
           return;
         }
         setProvider(providerData);
@@ -134,6 +130,8 @@ const ProviderDetail = () => {
               }));
               setRequestingClients(clientsWithStatus);
             }
+          } else {
+            setRequestingClients([]);
           }
           setClientsLoading(false);
         } else if (clientProfile && clientProfile.type === 'client') {
@@ -148,6 +146,9 @@ const ProviderDetail = () => {
           if (unlockedContacts && unlockedContacts.length > 0 && !unlockedError) {
             setUnlockedContactRecord(unlockedContacts[0]);
             setIsContactUnlocked(true);
+          } else {
+            setUnlockedContactRecord(null);
+            setIsContactUnlocked(false);
           }
         }
       } catch (error) {
