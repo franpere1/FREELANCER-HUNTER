@@ -151,7 +151,7 @@ const ProviderDetail = () => {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
         <Card className="max-w-md">
           <CardHeader>
-            <CardTitle>Proveedor No Encontrada</CardTitle>
+            <CardTitle>Proveedor No Encontrado</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p>No se pudo encontrar el proveedor con el ID proporcionado.</p>
@@ -197,7 +197,7 @@ const ProviderDetail = () => {
                       }`}
                     />
                   ))}
-                  {provider.rate && <span className="ml-3 text-lg text-gray-700">~ ${String(provider.rate)} BCV</span>}
+                  {provider.rate && <span className="ml-3 text-lg text-gray-700">~ ${provider.rate} BCV</span>}
                 </div>
               </div>
             </div>
@@ -234,7 +234,7 @@ const ProviderDetail = () => {
                   Liberar información de contacto (1 Token)
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">
-                  Tu saldo actual: {String(clientProfile?.token_balance ?? '0')} Tokens
+                  Tu saldo actual: {clientProfile?.token_balance ?? '0'} Tokens
                 </p>
               </div>
             )}
