@@ -7,15 +7,42 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Edit, Star } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useEffect, useState } from 'react';
+import LatestProviders from '@/components/LatestProviders';
 
 const Dashboard = () => {
   const { profile, loading } = useAuth();
   const navigate = useNavigate();
+  const [latestProviders, setLatestProviders] = useState<any[]>([]);
+  const [providersLoading, setProvidersLoading] = useState(true);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/login');
   };
+
+  useEffect(() => {
+    const fetchLatestProviders = async () => {
+      if (profile && profile.type === 'client') {
+        setProvidersLoading(true);
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('id, name, skill, rate, profile_image, star_rating')
+          .eq('type', 'provider')
+          .order('created_at', { ascending: false })
+          .limit(3);
+
+        if (error) {
+          console.error("Error fetching latest providers:", error);
+        } else {
+          setLatestProviders(data || []);
+        }
+        setProvidersLoading(false);
+      }
+    };
+
+    fetchLatestProviders();
+  }, [profile]);
 
   if (loading) {
     return (
@@ -56,7 +83,7 @@ const Dashboard = () => {
       <main className="container mx-auto p-4 md:p-8">
         <Card className="max-w-2xl mx-auto">
           <CardHeader className="relative">
-            <div className="absolute top-4 right-4 flex items-center space-x-2"> {/* Contenedor para el botón y el token */}
+            <div className="absolute top-4 right-4 flex items-center space-x-2">
               {profile.type === 'client' && (
                 <span className="text-blue-600 text-base font-semibold">TOKEN</span>
               )}
@@ -82,7 +109,14 @@ const Dashboard = () => {
                       <p className="text-sm font-semibold text-indigo-600">PROVEEDOR</p>
                       <div className="flex space-x-0.5 mt-1">
                         {[...Array(5)].map((_, i) => (
-                          <Star key={i} className="h-4 w-4 text-yellow-500" fill="none" stroke="currentColor" />
+                          <Star
+                            key={i}
+                            className={`h-4 w-4 ${
+                              profile.star_rating && i < profile.star_rating
+                                ? 'text-yellow-500 fill-yellow-500'
+                                : 'text-gray-300'
+                            }`}
+                          />
                         ))}
                       </div>
                     </div>
@@ -149,6 +183,10 @@ const Dashboard = () => {
             )}
           </CardContent>
         </Card>
+
+        {profile.type === 'client' && (
+          <LatestProviders providers={latestProviders} isLoading={providersLoading} />
+        )}
       </main>
     </div>
   );
