@@ -3,13 +3,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { venezuelaStates } from '@/lib/venezuela-data';
 import { showError, showSuccess } from '@/utils/toast';
@@ -62,7 +62,7 @@ const SignUp = () => {
       showError(error.message);
     } else {
       showSuccess('¡Registro exitoso! Revisa tu correo para verificar tu cuenta.');
-      navigate('/');
+      navigate('/login');
     }
   };
 
@@ -168,6 +168,14 @@ const SignUpForm = ({ type, onSubmit, register, errors, setValue }: any) => (
           <Button type="submit" className="w-full">Registrarse</Button>
         </form>
       </CardContent>
+      <CardFooter className="flex justify-center text-sm">
+        <p>
+          ¿Ya tienes una cuenta?{' '}
+          <Link to="/login" className="font-medium text-indigo-600 hover:text-indigo-500">
+            Inicia sesión
+          </Link>
+        </p>
+      </CardFooter>
     </Card>
   </TabsContent>
 );

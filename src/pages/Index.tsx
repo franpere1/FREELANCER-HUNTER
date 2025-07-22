@@ -7,7 +7,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 text-gray-800 relative">
       <div className="absolute top-4 right-4">
-        <Link to="/signup">
+        <Link to="/login">
           <Button>Inicio / Registro</Button>
         </Link>
       </div>
