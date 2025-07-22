@@ -12,7 +12,7 @@ import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast
 import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { cn } from '@/lib/utils'; // Importar la utilidad cn
+import { cn } from '@/lib/utils';
 
 const editProfileSchema = z.object({
   name: z.string().min(2, { message: 'El nombre es requerido' }),
@@ -21,13 +21,10 @@ const editProfileSchema = z.object({
   service_description: z.string().optional(),
   rate: z.preprocess(
     (val) => {
-      // Si el valor es null, undefined, o una cadena vacía, lo tratamos como undefined
       if (val === null || val === undefined || val === "") {
         return undefined;
       }
-      // Intentamos parsear el valor a un número flotante
       const parsed = parseFloat(String(val));
-      // Si el resultado es NaN (no es un número), también lo tratamos como undefined
       return isNaN(parsed) ? undefined : parsed;
     },
     z.number().positive({ message: 'El costo debe ser un número positivo' }).optional()
@@ -48,13 +45,11 @@ const EditProfile = () => {
     resolver: zodResolver(editProfileSchema),
   });
 
-  // Observar los cambios en los campos de archivo
   const watchedProfileImageFile = watch('profile_image_file');
   const watchedServiceImageFile = watch('service_image_file');
 
   useEffect(() => {
     if (profile) {
-      // Aseguramos que los campos de texto se inicialicen con cadena vacía si son nulos
       setValue('name', profile.name ?? '');
       setValue('phone', profile.phone ?? '');
       setProfileImagePreview(profile.profile_image);
@@ -67,7 +62,6 @@ const EditProfile = () => {
     }
   }, [profile, setValue]);
 
-  // Efecto para generar la vista previa de la imagen de perfil
   useEffect(() => {
     if (watchedProfileImageFile && watchedProfileImageFile.length > 0) {
       const file = watchedProfileImageFile[0];
@@ -77,14 +71,12 @@ const EditProfile = () => {
       };
       reader.readAsDataURL(file);
     } else if (profile && !watchedProfileImageFile) {
-      // Si no hay archivo nuevo y el campo se limpió, vuelve a la imagen original del perfil
       setProfileImagePreview(profile.profile_image);
     } else {
       setProfileImagePreview(null);
     }
   }, [watchedProfileImageFile, profile]);
 
-  // Efecto para generar la vista previa de la imagen de servicio
   useEffect(() => {
     if (watchedServiceImageFile && watchedServiceImageFile.length > 0) {
       const file = watchedServiceImageFile[0];
@@ -94,7 +86,6 @@ const EditProfile = () => {
       };
       reader.readAsDataURL(file);
     } else if (profile && profile.type === 'provider' && !watchedServiceImageFile) {
-      // Si no hay archivo nuevo y el campo se limpió, vuelve a la imagen original del servicio
       setServiceImagePreview(profile.service_image);
     } else {
       setServiceImagePreview(null);
@@ -167,7 +158,7 @@ const EditProfile = () => {
 
     } catch (error: any) {
       dismissToast(toastId);
-      showError(error.message || 'Ocurrió un error al actualizar el perfil.');
+      showError((error as Error).message || 'Ocurrió un error al actualizar el perfil.'); // Casteo explícito
     }
   };
 
@@ -181,7 +172,6 @@ const EditProfile = () => {
 
   const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).join('') : '';
 
-  // Para depuración: muestra los errores en la consola
   useEffect(() => {
     if (Object.keys(errors).length > 0) {
       console.log("Validation Errors:", errors);

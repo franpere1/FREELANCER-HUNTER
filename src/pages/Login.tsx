@@ -32,8 +32,8 @@ const Login = () => {
     }
   }, [session, navigate]);
 
-  const onSubmit = async (data: LoginFormData) => {
-    const { error } = await supabase.auth.signInWithPassword(data);
+  const onSubmit = async ({ email, password }: LoginFormData) => { // Desestructuración para asegurar tipos no opcionales
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       showError('Credenciales inválidas. Por favor, inténtalo de nuevo.');
     } else {

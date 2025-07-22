@@ -13,10 +13,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'; // Importar ToggleGroup
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { supabase } from '@/integrations/supabase/client';
-import { ThumbsUp, ThumbsDown, MinusCircle, CheckCircle } from 'lucide-react'; // Importar CheckCircle
+import { ThumbsUp, ThumbsDown, MinusCircle, CheckCircle } from 'lucide-react';
 
 const feedbackSchema = z.object({
   feedbackType: z.enum(['positive', 'negative', 'neutral'], {
@@ -32,7 +32,7 @@ interface FeedbackDialogProps {
   onClose: () => void;
   providerId: string;
   clientId: string;
-  onFeedbackSubmitted: () => void; // Callback para refrescar los datos del proveedor
+  onFeedbackSubmitted: () => void;
 }
 
 const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, providerId, clientId, onFeedbackSubmitted }) => {
@@ -40,7 +40,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
     resolver: zodResolver(feedbackSchema),
   });
 
-  const selectedFeedbackType = watch('feedbackType'); // Observar el valor seleccionado
+  const selectedFeedbackType = watch('feedbackType');
 
   const handleFeedbackTypeChange = (value: string) => {
     setValue('feedbackType', value as 'positive' | 'negative' | 'neutral', { shouldValidate: true });
@@ -53,7 +53,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
         provider_id_in: providerId,
         client_id_in: clientId,
         feedback_type_in: data.feedbackType,
-        comment_in: data.comment || '', // Asegurarse de enviar una cadena vacía si no hay comentario
+        comment_in: data.comment || '',
       });
 
       if (error) {
@@ -62,17 +62,16 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
 
       dismissToast(toastId);
       showSuccess('¡Calificación enviada con éxito!');
-      onFeedbackSubmitted(); // Refrescar los datos del proveedor
+      onFeedbackSubmitted();
       onClose();
-      reset(); // Limpiar el formulario
+      reset();
     } catch (err: any) {
       dismissToast(toastId);
       console.error('Error al enviar calificación:', err);
-      showError(err.message || 'Ocurrió un error al enviar la calificación.');
+      showError((err as Error).message || 'Ocurrió un error al enviar la calificación.'); // Casteo explícito
     }
   };
 
-  // Reset form when dialog closes
   React.useEffect(() => {
     if (!isOpen) {
       reset();

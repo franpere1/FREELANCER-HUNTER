@@ -35,9 +35,9 @@ const ProviderDetail = () => {
   const { user, profile: clientProfile, loading: authLoading, refreshProfile } = useAuth();
   const [provider, setProvider] = useState<ProviderProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isContactVisible, setIsContactVisible] = useState(false); // Controla si el contacto está visible (no difuminado)
-  const [feedbackSubmittedForCurrentUnlock, setFeedbackSubmittedForCurrentUnlock] = useState(false); // Nuevo estado
-  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false); // <--- ¡AQUÍ ESTÁ LA DECLARACIÓN QUE FALTABA!
+  const [isContactVisible, setIsContactVisible] = useState(false);
+  const [feedbackSubmittedForCurrentUnlock, setFeedbackSubmittedForCurrentUnlock] = useState(false);
+  const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
 
   const fetchProviderAndUnlockStatus = useCallback(async () => {
     if (!id) {
@@ -63,25 +63,24 @@ const ProviderDetail = () => {
     } else {
       setProvider(data);
       let unlockedFromDB = false;
-      let feedbackSubmitted = false; // Usaremos esta variable para el nuevo estado
+      let feedbackSubmitted = false;
 
       if (clientProfile && clientProfile.type === 'client' && user) {
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
-          .select('id, feedback_submitted_for_this_unlock') // Obtener la nueva columna
+          .select('id, feedback_submitted_for_this_unlock')
           .eq('client_id', user.id)
           .eq('provider_id', id)
           .single();
 
         if (!unlockedError && unlockedData) {
           unlockedFromDB = true;
-          feedbackSubmitted = unlockedData.feedback_submitted_for_this_unlock; // Asignar el valor de la DB
+          feedbackSubmitted = unlockedData.feedback_submitted_for_this_unlock;
         }
       }
 
-      // El contacto es visible si está desbloqueado en la DB Y NO se ha enviado feedback para esta liberación
       setIsContactVisible(unlockedFromDB && !feedbackSubmitted); 
-      setFeedbackSubmittedForCurrentUnlock(feedbackSubmitted); // Actualizar el estado local
+      setFeedbackSubmittedForCurrentUnlock(feedbackSubmitted);
     }
     setLoading(false);
   }, [id, user, clientProfile]);
@@ -115,14 +114,13 @@ const ProviderDetail = () => {
       }
 
       if (data === 'DESBLOQUEO EXITOSO') {
-        await refreshProfile(); // Refrescar el saldo de tokens del cliente
-        // Después de la RPC, volver a obtener el estado para reflejar la actualización en la DB
+        await refreshProfile();
         await fetchProviderAndUnlockStatus(); 
         dismissToast(toastId);
         showSuccess('¡Información de contacto desbloqueada con éxito!');
       } else if (data === 'CONTACTO YA DESBLOQUEADO') {
         await refreshProfile();
-        await fetchProviderAndUnlockStatus(); // Volver a obtener para asegurar la consistencia de la UI
+        await fetchProviderAndUnlockStatus();
         dismissToast(toastId);
         showSuccess('La información de contacto ya está desbloqueada.');
       } else {
@@ -131,15 +129,13 @@ const ProviderDetail = () => {
     } catch (err: any) {
       dismissToast(toastId);
       console.error('Error al desbloquear contacto:', err);
-      showError(err.message || 'Ocurrió un error al desbloquear la información.');
+      showError((err as Error).message || 'Ocurrió un error al desbloquear la información.'); // Casteo explícito
     }
   };
 
   const handleFeedbackSubmitted = () => {
-    // La función RPC `add_feedback` ahora actualiza `feedback_submitted_for_this_unlock` a TRUE.
-    // Solo necesitamos volver a obtener los datos del proveedor y el estado de desbloqueo para reflejar este cambio.
-    setIsFeedbackDialogOpen(false); // Cerrar el diálogo
-    fetchProviderAndUnlockStatus(); // Esto reevaluará isContactVisible y feedbackSubmittedForCurrentUnlock
+    setIsFeedbackDialogOpen(false);
+    fetchProviderAndUnlockStatus();
   };
 
   if (loading || authLoading) {
@@ -167,11 +163,8 @@ const ProviderDetail = () => {
   }
 
   const isClient = clientProfile?.type === 'client';
-  // El contacto se difumina si es un cliente Y no está visible actualmente
   const showBlurred = isClient && !isContactVisible; 
-  // El botón de desbloqueo se muestra si es un cliente Y el contacto no está visible actualmente
   const canUnlock = isClient && !isContactVisible; 
-  // El botón de feedback se muestra si es un cliente Y el contacto está visible Y NO se ha enviado feedback para esta liberación
   const canGiveFeedback = isClient && isContactVisible && !feedbackSubmittedForCurrentUnlock; 
 
   return (

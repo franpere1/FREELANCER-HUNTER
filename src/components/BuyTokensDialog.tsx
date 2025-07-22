@@ -24,7 +24,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
   const [usdAmount, setUsdAmount] = useState<number | ''>('');
   const [tokensToReceive, setTokensToReceive] = useState<number>(0);
   const [error, setError] = useState<string | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false); // Nuevo estado para el procesamiento
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleUsdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -56,12 +56,12 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
       return;
     }
 
-    setIsProcessing(true); // Iniciar el estado de procesamiento
+    setIsProcessing(true);
     const toastId = showLoading('Procesando compra de tokens...');
 
     try {
       // Simular un pago exitoso
-      await new Promise(resolve => setTimeout(resolve, 1500)); // Simula una espera de red
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       const { data: currentProfile, error: fetchError } = await supabase
         .from('profiles')
@@ -80,7 +80,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
 
       if (updateError) throw updateError;
 
-      await refreshProfile(); // Refrescar el perfil en el contexto de autenticación
+      await refreshProfile();
       dismissToast(toastId);
       showSuccess(`¡Compra exitosa! Has recibido ${tokensToReceive} tokens.`);
       setUsdAmount('');
@@ -89,9 +89,9 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
     } catch (err: any) {
       dismissToast(toastId);
       console.error('Error al comprar tokens:', err);
-      showError(`Error al procesar la compra: ${err.message || 'Inténtalo de nuevo.'}`);
+      showError((err as Error).message || 'Error al procesar la compra: Inténtalo de nuevo.'); // Casteo explícito
     } finally {
-      setIsProcessing(false); // Finalizar el estado de procesamiento
+      setIsProcessing(false);
     }
   };
 
@@ -118,7 +118,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
               onChange={handleUsdChange}
               className="col-span-3"
               placeholder="Ej: 10.00"
-              disabled={isProcessing} // Deshabilitar durante el procesamiento
+              disabled={isProcessing}
             />
           </div>
           {error && <p className="text-red-500 text-sm text-center">{error}</p>}
@@ -131,7 +131,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
               value={tokensToReceive}
               readOnly
               className="col-span-3 bg-gray-100"
-              disabled={isProcessing} // Deshabilitar durante el procesamiento
+              disabled={isProcessing}
             />
           </div>
           <div className="text-center text-sm text-muted-foreground mt-2">
@@ -141,7 +141,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
         <DialogFooter>
           <Button variant="outline" onClick={onClose} disabled={isProcessing}>Cancelar</Button>
           <Button onClick={handleBuyTokens} disabled={!usdAmount || usdAmount < 10 || !!error || isProcessing}>
-            {isProcessing ? 'Procesando...' : `Comprar ${tokensToReceive > 0 ? `${tokensToReceive} Tokens` : ''}`}
+            {isProcessing ? 'Procesando...' : `Comprar ${tokensToReceive > 0 ? `${tokensToReceive.toString()} Tokens` : ''}`}
           </Button>
         </DialogFooter>
       </DialogContent>

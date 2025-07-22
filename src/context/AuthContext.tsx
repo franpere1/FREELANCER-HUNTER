@@ -16,7 +16,8 @@ interface Profile {
   star_rating: number | null;
   service_image: string | null;
   rate: number | null;
-  token_balance: number | null; // Añadido
+  token_balance: number | null;
+  feedback: any[] | null; // Añadido para resolver errores de tipado
 }
 
 interface AuthContextType {
@@ -29,7 +30,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { ReactNode }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => { // Corregido el tipo de children
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
