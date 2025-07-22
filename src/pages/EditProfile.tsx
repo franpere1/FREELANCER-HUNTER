@@ -111,7 +111,11 @@ const EditProfile = () => {
   };
 
   const onSubmit = async (data: EditProfileFormData) => {
-    if (!profile || !user) return;
+    console.log("onSubmit called with data:", data); // Nuevo log
+    if (!profile || !user) {
+      console.log("Profile or user not available, returning."); // Nuevo log
+      return;
+    }
 
     const toastId = showLoading('Actualizando perfil...');
     let profileImageUrl = profile.profile_image;
@@ -156,8 +160,12 @@ const EditProfile = () => {
         .update(updateData)
         .eq('id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase update error:", error); // Nuevo log
+        throw error;
+      }
 
+      console.log("Profile updated successfully in Supabase."); // Nuevo log
       await refreshProfile();
       dismissToast(toastId);
       showSuccess('¡Perfil actualizado con éxito!');
@@ -165,6 +173,7 @@ const EditProfile = () => {
 
     } catch (error: any) {
       dismissToast(toastId);
+      console.error("Error during profile update process:", error); // Nuevo log
       showError(error.message || 'Ocurrió un error al actualizar el perfil.');
     }
   };
@@ -199,7 +208,7 @@ const EditProfile = () => {
                   id="profile_image_file"
                   type="file"
                   accept="image/*"
-                  {...register('profile_image_file')} // Usar register directamente
+                  {...register('profile_image_file')}
                 />
               </div>
             </div>
@@ -242,7 +251,7 @@ const EditProfile = () => {
                       id="service_image_file"
                       type="file"
                       accept="image/*"
-                      {...register('service_image_file')} // Usar register directamente
+                      {...register('service_image_file')}
                     />
                   </div>
                 </div>
