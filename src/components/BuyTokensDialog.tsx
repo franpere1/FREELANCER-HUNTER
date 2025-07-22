@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } => '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 
 interface BuyTokensDialogProps {
@@ -86,7 +86,7 @@ const BuyTokensDialog: React.FC<BuyTokensDialogProps> = ({ isOpen, onClose }) =>
       setUsdAmount('');
       setTokensToReceive(0);
       onClose();
-    } catch (err: unknown) { // Cambiado a unknown
+    } catch (err: unknown) {
       dismissToast(toastId);
       console.error('Error al comprar tokens:', err);
       showError(err instanceof Error ? err.message : String(err || 'Error al procesar la compra: Inténtalo de nuevo.'));

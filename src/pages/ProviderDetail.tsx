@@ -126,7 +126,7 @@ const ProviderDetail = () => {
       } else {
         throw new Error('Respuesta inesperada del servidor.');
       }
-    } catch (err: unknown) { // Cambiado a unknown
+    } catch (err: unknown) {
       dismissToast(toastId);
       console.error('Error al desbloquear contacto:', err);
       showError(err instanceof Error ? err.message : String(err || 'Ocurrió un error al desbloquear la información.'));

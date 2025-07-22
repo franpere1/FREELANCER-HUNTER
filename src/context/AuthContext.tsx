@@ -17,7 +17,7 @@ interface Profile {
   service_image: string | null;
   rate: number | null;
   token_balance: number | null;
-  feedback: any[] | null; // Añadido para resolver errores de tipado
+  feedback: any[] | null;
 }
 
 interface AuthContextType {
@@ -30,39 +30,47 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => { // Corregido el tipo de children
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
 
-  const fetchProfile = useCallback(async () => {
-    if (user) {
-      setProfileLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+  const fetchProfile = useCallback(async (userId: string) => {
+    setProfileLoading(true);
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
 
-      if (error) {
-        console.error("Error fetching profile:", error);
-        setProfile(null);
-      } else {
-        setProfile(data);
-      }
-      setProfileLoading(false);
-    } else {
+    if (error) {
+      console.error("Error fetching profile:", error);
       setProfile(null);
+    } else {
+      setProfile(data);
     }
-  }, [user]);
+    setProfileLoading(false);
+  }, []);
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const getInitialSession = async () => {
+      const { data: { session }, error } = await supabase.auth.getSession();
+      if (error) {
+        console.error("Error getting initial session:", error);
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setAuthLoading(false);
+    };
+
+    getInitialSession();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      // setAuthLoading(false); // No es necesario aquí, ya se hizo en getInitialSession
     });
 
     return () => {
@@ -71,7 +79,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => { // Corr
   }, []);
 
   useEffect(() => {
-    fetchProfile();
+    if (user) {
+      fetchProfile(user.id);
+    } else {
+      setProfile(null);
+      setProfileLoading(false); // Asegurarse de que profileLoading sea false si no hay usuario
+    }
   }, [user, fetchProfile]);
 
   const value = {
@@ -79,7 +92,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => { // Corr
     user,
     profile,
     loading: authLoading || profileLoading,
-    refreshProfile: fetchProfile,
+    refreshProfile: useCallback(async () => {
+      if (user) {
+        await fetchProfile(user.id);
+      }
+    }, [user, fetchProfile]),
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

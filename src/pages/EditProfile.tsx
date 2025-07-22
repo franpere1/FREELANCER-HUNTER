@@ -156,7 +156,7 @@ const EditProfile = () => {
       showSuccess('¡Perfil actualizado con éxito!');
       navigate('/dashboard');
 
-    } catch (err: unknown) { // Cambiado a unknown
+    } catch (err: unknown) {
       dismissToast(toastId);
       console.error('Error al actualizar perfil:', err);
       showError(err instanceof Error ? err.message : String(err || 'Ocurrió un error al actualizar el perfil.'));

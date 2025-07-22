@@ -65,7 +65,7 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({ isOpen, onClose, provid
       onFeedbackSubmitted();
       onClose();
       reset();
-    } catch (err: unknown) { // Cambiado a unknown
+    } catch (err: unknown) {
       dismissToast(toastId);
       console.error('Error al enviar calificación:', err);
       showError(err instanceof Error ? err.message : String(err || 'Ocurrió un error al enviar la calificación.'));
