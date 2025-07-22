@@ -32,11 +32,6 @@ const Dashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
-  };
-
   const fetchClientData = useCallback(async () => {
     if (!profile || !user) return;
     setActiveContactsLoading(true);
@@ -207,7 +202,7 @@ const Dashboard = () => {
           <CardHeader><CardTitle>Error al Cargar el Perfil</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <p>No pudimos encontrar los datos de tu perfil. Por favor, intenta cerrar sesión y registrarte de nuevo.</p>
-            <Button onClick={handleLogout}>Cerrar Sesión</Button>
+            <Button onClick={() => supabase.auth.signOut().then(() => navigate('/login'))}>Cerrar Sesión</Button>
           </CardContent>
         </Card>
       </div>

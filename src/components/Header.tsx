@@ -12,13 +12,16 @@ const Header = () => {
   const handleLogout = async () => {
     setIsLoggingOut(true);
     const { error } = await supabase.auth.signOut();
+    
     if (error) {
       showError('Error al cerrar sesión. Por favor, inténtalo de nuevo.');
       console.error('Error logging out:', error);
-      setIsLoggingOut(false);
     }
-    // The redirect is handled automatically by the AuthProvider and ProtectedRoute
-    // after the session state changes. Navigating manually can cause race conditions.
+    
+    // Navigate to the login page regardless of the outcome.
+    // The AuthProvider will re-evaluate the session state on that page.
+    navigate('/login');
+    setIsLoggingOut(false);
   };
 
   return (
