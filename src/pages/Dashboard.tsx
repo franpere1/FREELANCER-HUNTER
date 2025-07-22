@@ -5,18 +5,29 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Star } from 'lucide-react';
+import { Edit, Star, Phone, Mail } from 'lucide-react'; // Importar Phone y Mail
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEffect, useState } from 'react';
 import LatestProviders from '@/components/LatestProviders';
-import BuyTokensDialog from '@/components/BuyTokensDialog'; // Importar el nuevo componente
+import BuyTokensDialog from '@/components/BuyTokensDialog';
+
+// Nueva interfaz para los clientes que han desbloqueado el contacto
+interface UnlockedClient {
+  id: string; // client_id
+  name: string;
+  email: string;
+  phone: string;
+  profile_image: string | null;
+}
 
 const Dashboard = () => {
   const { profile, loading } = useAuth();
   const navigate = useNavigate();
   const [latestProviders, setLatestProviders] = useState<any[]>([]);
   const [providersLoading, setProvidersLoading] = useState(true);
-  const [isBuyTokensDialogOpen, setIsBuyTokensDialogOpen] = useState(false); // Estado para el diálogo
+  const [isBuyTokensDialogOpen, setIsBuyTokensDialogOpen] = useState(false);
+  const [unlockedClients, setUnlockedClients] = useState<UnlockedClient[]>([]); // Nuevo estado para clientes desbloqueados
+  const [unlockedClientsLoading, setUnlockedClientsLoading] = useState(true); // Nuevo estado de carga
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -43,7 +54,46 @@ const Dashboard = () => {
       }
     };
 
+    const fetchUnlockedClients = async () => {
+      if (profile && profile.type === 'provider' && profile.id) {
+        setUnlockedClientsLoading(true);
+        // Primero, obtener todos los client_ids que desbloquearon a este proveedor
+        const { data: unlockedData, error: unlockedError } = await supabase
+          .from('unlocked_contacts')
+          .select('client_id')
+          .eq('provider_id', profile.id);
+
+        if (unlockedError) {
+          console.error("Error fetching unlocked contacts:", unlockedError);
+          setUnlockedClients([]);
+          setUnlockedClientsLoading(false);
+          return;
+        }
+
+        const clientIds = unlockedData.map(item => item.client_id);
+
+        if (clientIds.length > 0) {
+          // Luego, obtener los perfiles de estos client_ids
+          const { data: clientProfiles, error: profilesError } = await supabase
+            .from('profiles')
+            .select('id, name, email, phone, profile_image')
+            .in('id', clientIds);
+
+          if (profilesError) {
+            console.error("Error fetching client profiles:", profilesError);
+            setUnlockedClients([]);
+          } else {
+            setUnlockedClients(clientProfiles || []);
+          }
+        } else {
+          setUnlockedClients([]);
+        }
+        setUnlockedClientsLoading(false);
+      }
+    };
+
     fetchLatestProviders();
+    fetchUnlockedClients(); // Llamar a la nueva función de obtención de datos
   }, [profile]);
 
   if (loading) {
@@ -134,8 +184,18 @@ const Dashboard = () => {
                   <div className="flex flex-col items-start md:justify-self-end md:mt-0 mt-4">
                     <p className="font-semibold mb-2">Comentarios</p>
                     <ScrollArea className="h-32 w-full md:w-64 rounded-md border p-4">
-                      <p className="text-sm text-muted-foreground">No hay comentarios aún.</p>
-                      {/* Aquí se mostrarán los comentarios reales cuando estén disponibles */}
+                      {profile.feedback && profile.feedback.length > 0 ? (
+                        profile.feedback.map((fb: any, index: number) => (
+                          <div key={index} className="mb-2 pb-2 border-b last:border-b-0">
+                            <p className="text-sm font-medium">{fb.comment}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {new Date(fb.timestamp).toLocaleDateString()} - {fb.type === 'positive' ? 'Positivo' : fb.type === 'negative' ? 'Negativo' : 'Neutral'}
+                            </p>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No hay comentarios aún.</p>
+                      )}
                     </ScrollArea>
                   </div>
                 )}
@@ -201,6 +261,43 @@ const Dashboard = () => {
                 <Button className="w-full" onClick={() => setIsBuyTokensDialogOpen(true)}>
                   Comprar Token
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {profile.type === 'provider' && (
+            <Card className="md:col-span-1 flex flex-col"> {/* Nueva tarjeta para "Solicitudes de Servicio" */}
+              <CardHeader>
+                <CardTitle>Solicitudes de Servicio</CardTitle>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                {unlockedClientsLoading ? (
+                  <p>Cargando solicitudes...</p>
+                ) : unlockedClients.length === 0 ? (
+                  <p className="text-muted-foreground">Nadie ha desbloqueado tu contacto aún.</p>
+                ) : (
+                  <ScrollArea className="h-64 pr-4"> {/* Usar ScrollArea para listas potencialmente largas */}
+                    <div className="space-y-4">
+                      {unlockedClients.map((client) => (
+                        <div key={client.id} className="flex items-center space-x-4 p-3 border rounded-md shadow-sm">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={client.profile_image || undefined} alt={client.name} />
+                            <AvatarFallback>{getInitials(client.name)}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-lg">{client.name}</p>
+                            <p className="text-sm text-muted-foreground flex items-center">
+                              <Phone className="h-4 w-4 mr-1" /> {client.phone}
+                            </p>
+                            <p className="text-sm text-muted-foreground flex items-center">
+                              <Mail className="h-4 w-4 mr-1" /> {client.email}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
               </CardContent>
             </Card>
           )}
