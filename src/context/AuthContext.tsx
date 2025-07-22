@@ -55,70 +55,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
-    // Manually clear session to ensure immediate UI update and prevent flicker
     setSession(null);
     setUser(null);
     setProfile(null);
   }, []);
 
-  // Effect for handling auth state changes
   useEffect(() => {
-    setLoading(true);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const setAuthData = async (session: Session | null) => {
       setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        setLoading(false);
+      if (currentUser) {
+        await fetchProfile(currentUser.id);
+      } else {
+        setProfile(null);
       }
+    };
+
+    const initializeAuth = async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
+      await setAuthData(session);
+      setLoading(false);
+    };
+
+    initializeAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthData(session);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  // Effect for fetching profile and subscribing to realtime updates
-  useEffect(() => {
-    if (user) {
-      fetchProfile(user.id);
-
-      const profileChannel = supabase
-        .channel(`public:profiles:id=eq.${user.id}`)
-        .on<Profile>(
-          'postgres_changes',
-          {
-            event: 'UPDATE',
-            schema: 'public',
-            table: 'profiles',
-            filter: `id=eq.${user.id}`,
-          },
-          (payload) => {
-            setProfile((currentProfile) => {
-              const oldFeedbackCount = currentProfile?.feedback?.length ?? 0;
-              const newFeedbackCount = (payload.new.feedback as any[])?.length ?? 0;
-
-              if (newFeedbackCount > oldFeedbackCount) {
-                  showSuccess('¡Has recibido un nuevo comentario!');
-              }
-              
-              if (currentProfile) {
-                return { ...currentProfile, ...payload.new };
-              }
-              return payload.new as Profile;
-            });
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(profileChannel);
-      };
-    } else {
-      setProfile(null);
-    }
-  }, [user, fetchProfile]);
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
