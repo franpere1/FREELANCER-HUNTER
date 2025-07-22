@@ -3,9 +3,9 @@ import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Edit, Star } from 'lucide-react';
+import { Edit, Star, MessageSquare } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEffect, useState, useCallback } from 'react';
 import LatestProviders from '@/components/LatestProviders';
@@ -40,9 +40,8 @@ const Dashboard = () => {
       setActiveContactsLoading(true);
       const { data: unlockedData, error: unlockedError } = await supabase
         .from('unlocked_contacts')
-        .select('provider_id')
-        .eq('client_id', profile.id)
-        .eq('feedback_submitted_for_this_unlock', false);
+        .select('provider_id, feedback_submitted_for_this_unlock')
+        .eq('client_id', profile.id);
 
       if (unlockedError) {
         console.error("Error fetching active contacts:", unlockedError);
@@ -54,7 +53,13 @@ const Dashboard = () => {
             .from('profiles')
             .select('id, name, skill, rate, profile_image, star_rating')
             .in('id', providerIds);
-          setActiveContacts(providersData || []);
+          
+          const contactsWithFeedbackStatus = providersData?.map(p => ({
+            ...p,
+            feedback_submitted: unlockedData.find(ud => ud.provider_id === p.id)?.feedback_submitted_for_this_unlock
+          }));
+
+          setActiveContacts(contactsWithFeedbackStatus || []);
         } else {
           setActiveContacts([]);
         }
@@ -89,8 +94,7 @@ const Dashboard = () => {
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
           .select('client_id')
-          .eq('provider_id', profile.id)
-          .eq('feedback_submitted_for_this_unlock', false);
+          .eq('provider_id', profile.id);
 
         if (unlockedError) {
           console.error("Error fetching unlocked contacts:", unlockedError);
@@ -239,8 +243,9 @@ const Dashboard = () => {
                               </div>
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2">
-                              <Button variant="outline" size="sm" onClick={() => navigate(`/provider/${provider.id}`)}>Ver</Button>
-                              <Button size="sm" onClick={() => { setSelectedProviderForFeedback(provider); setIsFeedbackDialogOpen(true); }}>Calificar</Button>
+                              <Button variant="outline" size="sm" asChild><Link to={`/provider/${provider.id}`}>Ver</Link></Button>
+                              <Button size="sm" asChild><Link to={`/chat/${provider.id}`}>Chatear</Link></Button>
+                              {!provider.feedback_submitted && <Button size="sm" onClick={() => { setSelectedProviderForFeedback(provider); setIsFeedbackDialogOpen(true); }}>Calificar</Button>}
                             </div>
                           </div>
                         ))}
@@ -256,7 +261,7 @@ const Dashboard = () => {
 
         {profile.type === 'provider' && (
           <div className="mt-8">
-            <Card><CardHeader><CardTitle>Clientes Solicitando Servicio</CardTitle></CardHeader><CardContent><ScrollArea className="h-64 pr-4">{clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client: any) => <div key={client.id} className="mb-3 pb-3 border-b last:border-b-0"><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}</ScrollArea></CardContent></Card>
+            <Card><CardHeader><CardTitle>Clientes Solicitando Servicio</CardTitle></CardHeader><CardContent><ScrollArea className="h-64 pr-4">{clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client: any) => <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0"><div><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div><Button size="sm" asChild><Link to={`/chat/${client.id}`}>Chatear</Link></Button></div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}</ScrollArea></CardContent></Card>
           </div>
         )}
       </main>

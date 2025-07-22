@@ -13,6 +13,7 @@ import { AuthProvider } from "./context/AuthContext";
 import EditProfile from "./pages/EditProfile";
 import ProviderDetail from "./pages/ProviderDetail";
 import SimulatedBinancePay from "./pages/SimulatedBinancePay";
+import ChatPage from "./pages/ChatPage";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,7 @@ const App = () => (
               <Route path="/edit-profile" element={<EditProfile />} />
               <Route path="/provider/:id" element={<ProviderDetail />} />
               <Route path="/payment" element={<SimulatedBinancePay />} />
+              <Route path="/chat/:otherUserId" element={<ChatPage />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

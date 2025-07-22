@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import Header from '@/components/Header';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -97,7 +97,6 @@ const ProviderDetail = () => {
 
     if (user && providerData && user.id === providerData.id) {
       setClientsLoading(true);
-      // Step 1: Fetch the client_ids from unlocked_contacts
       const { data: unlockedData, error: unlockedError } = await supabase
         .from('unlocked_contacts')
         .select('client_id')
@@ -110,7 +109,6 @@ const ProviderDetail = () => {
       } else {
         const clientIds = unlockedData.map(uc => uc.client_id);
         if (clientIds.length > 0) {
-          // Step 2: Fetch the profiles for those client_ids
           const { data: clientsData, error: clientsError } = await supabase
             .from('profiles')
             .select('id, name, phone, email')
@@ -146,7 +144,7 @@ const ProviderDetail = () => {
 
       if (unlockedContact) {
         setUnlockedContactRecord(unlockedContact);
-        setIsContactUnlocked(!unlockedContact.feedback_submitted_for_this_unlock);
+        setIsContactUnlocked(true); // Contact is considered unlocked regardless of feedback status
       } else {
         setUnlockedContactRecord(null);
         setIsContactUnlocked(false);
@@ -224,8 +222,7 @@ const ProviderDetail = () => {
   }
 
   const isClient = clientProfile?.type === 'client';
-  const canShowContactButton = isClient && !isContactUnlocked;
-  const canShowFeedbackButton = isClient && isContactUnlocked && unlockedContactRecord && !unlockedContactRecord.feedback_submitted_for_this_unlock;
+  const canShowFeedbackButton = isContactUnlocked && unlockedContactRecord && !unlockedContactRecord.feedback_submitted_for_this_unlock;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -284,7 +281,7 @@ const ProviderDetail = () => {
 
             {isClient && (
               <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t">
-                {canShowContactButton && (
+                {!isContactUnlocked ? (
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button className="w-full sm:w-auto" disabled={(clientProfile?.token_balance || 0) < 1}>
@@ -307,14 +304,15 @@ const ProviderDetail = () => {
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
+                ) : (
+                  <Button asChild className="w-full sm:w-auto">
+                    <Link to={`/chat/${provider.id}`}>Ir al Chat</Link>
+                  </Button>
                 )}
                 {canShowFeedbackButton && (
                   <Button variant="secondary" onClick={() => setIsFeedbackDialogOpen(true)} className="w-full sm:w-auto">
                     Calificar
                   </Button>
-                )}
-                {isContactUnlocked && !canShowFeedbackButton && unlockedContactRecord?.feedback_submitted_for_this_unlock && (
-                  <p className="text-sm text-muted-foreground italic">Ya has calificado a este proveedor para este desbloqueo. Puedes volver a desbloquearlo si lo necesitas.</p>
                 )}
               </div>
             )}
@@ -357,10 +355,15 @@ const ProviderDetail = () => {
                     <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p>
                   ) : requestingClients.length > 0 ? (
                     requestingClients.map((client) => (
-                      <div key={client.id} className="mb-3 pb-3 border-b last:border-b-0">
-                        <p className="text-sm font-semibold">{client.name}</p>
-                        <p className="text-xs text-muted-foreground">Tel: {client.phone}</p>
-                        <p className="text-xs text-muted-foreground">Correo: {client.email}</p>
+                      <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0">
+                        <div>
+                          <p className="text-sm font-semibold">{client.name}</p>
+                          <p className="text-xs text-muted-foreground">Tel: {client.phone}</p>
+                          <p className="text-xs text-muted-foreground">Correo: {client.email}</p>
+                        </div>
+                        <Button asChild size="sm">
+                          <Link to={`/chat/${client.id}`}>Chatear</Link>
+                        </Button>
                       </div>
                     ))
                   ) : (
