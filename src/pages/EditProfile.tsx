@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } => '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
@@ -45,13 +45,13 @@ const EditProfile = () => {
   useEffect(() => {
     if (profile) {
       // Aseguramos que los campos de texto se inicialicen con cadena vacía si son nulos
-      setValue('name', profile.name || '');
-      setValue('phone', profile.phone || '');
+      setValue('name', profile.name ?? '');
+      setValue('phone', profile.phone ?? '');
       setProfileImagePreview(profile.profile_image);
       if (profile.type === 'provider') {
-        setValue('skill', profile.skill || '');
-        setValue('service_description', profile.service_description || '');
-        setValue('rate', profile.rate || undefined);
+        setValue('skill', profile.skill ?? '');
+        setValue('service_description', profile.service_description ?? '');
+        setValue('rate', profile.rate ?? undefined);
         setServiceImagePreview(profile.service_image);
       }
     }
@@ -171,6 +171,13 @@ const EditProfile = () => {
 
   const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).join('') : '';
 
+  // Para depuración: muestra los errores en la consola
+  useEffect(() => {
+    if (Object.keys(errors).length > 0) {
+      console.log("Validation Errors:", errors);
+    }
+  }, [errors]);
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <Card className="w-full max-w-2xl">
@@ -200,12 +207,12 @@ const EditProfile = () => {
               <div>
                 <Label htmlFor="name">Nombre Completo</Label>
                 <Input id="name" {...register('name')} />
-                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+                {errors.name && <p className="text-red-500 text-sm font-semibold mt-1">{errors.name.message}</p>}
               </div>
               <div>
                 <Label htmlFor="phone">Teléfono</Label>
                 <Input id="phone" {...register('phone')} />
-                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+                {errors.phone && <p className="text-red-500 text-sm font-semibold mt-1">{errors.phone.message}</p>}
               </div>
             </div>
 
