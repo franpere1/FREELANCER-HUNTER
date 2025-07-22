@@ -52,6 +52,7 @@ interface RequestingClient {
   name: string;
   phone: string;
   email: string;
+  hasUnreadMessages?: boolean;
 }
 
 const ProviderDetail = () => {
@@ -74,7 +75,6 @@ const ProviderDetail = () => {
 
   useEffect(() => {
     const fetchDetails = async () => {
-      // Force a clean state before fetching
       setLoading(true);
       setProvider(null);
       setIsContactUnlocked(false);
@@ -102,12 +102,11 @@ const ProviderDetail = () => {
       setProvider(providerData);
 
       if (user.id === providerData.id) {
-        // Logic for when the provider views their own profile
         const { data: unlockedData, error: unlockedError } = await supabase
           .from('unlocked_contacts')
           .select('client_id')
           .eq('provider_id', providerData.id)
-          .eq('feedback_submitted_for_this_unlock', false); // Only show clients who haven't submitted feedback
+          .eq('feedback_submitted_for_this_unlock', false);
 
         if (!unlockedError && unlockedData && unlockedData.length > 0) {
           const clientIds = unlockedData.map(uc => uc.client_id);
@@ -115,18 +114,30 @@ const ProviderDetail = () => {
             .from('profiles')
             .select('id, name, phone, email')
             .in('id', clientIds);
-          setRequestingClients(clientsError ? [] : (clientsData as RequestingClient[]));
+          
+          const { data: unreadData } = await supabase
+            .from('messages')
+            .select('sender_id')
+            .eq('receiver_id', user.id)
+            .in('sender_id', clientIds)
+            .not('read_by', 'cs', `{${user.id}}`);
+            
+          const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
+
+          const clientsWithStatus = clientsError ? [] : clientsData?.map(c => ({
+            ...c,
+            hasUnreadMessages: unreadSenders.has(c.id),
+          }));
+          setRequestingClients(clientsWithStatus as RequestingClient[]);
         }
         setClientsLoading(false);
       } else if (clientProfile && clientProfile.type === 'client') {
-        // Logic for when a client views a provider's profile
-        // Check for an ACTIVE unlock (feedback not yet submitted)
         const { data: unlockedContact, error: unlockedError } = await supabase
           .from('unlocked_contacts')
           .select('*')
           .eq('client_id', user.id)
           .eq('provider_id', id)
-          .eq('feedback_submitted_for_this_unlock', false) // CRUCIAL: Only get active unlocks
+          .eq('feedback_submitted_for_this_unlock', false)
           .single();
 
         if (unlockedContact && !unlockedError) {
@@ -248,7 +259,17 @@ const ProviderDetail = () => {
               <div className="space-y-2 pt-4 border-t">
                 <p className="font-semibold text-gray-700">Clientes solicitando servicio</p>
                 <ScrollArea className="h-48 w-full rounded-md border p-4 bg-gray-50">
-                  {clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client) => <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0"><div><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div><Button asChild size="sm"><Link to={`/chat/${client.id}`}>Chatear</Link></Button></div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}
+                  {clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client) => <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0"><div><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div>
+                  {client.hasUnreadMessages ? (
+                    <Button asChild size="sm" className="bg-green-500 hover:bg-green-600 text-white animate-pulse">
+                      <Link to={`/chat/${client.id}`}>Mensaje Nuevo</Link>
+                    </Button>
+                  ) : (
+                    <Button asChild size="sm">
+                      <Link to={`/chat/${client.id}`}>Chatear</Link>
+                    </Button>
+                  )}
+                  </div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}
                 </ScrollArea>
               </div>
             )}

@@ -18,6 +18,7 @@ interface Message {
   receiver_id: string;
   text: string;
   timestamp: string;
+  read_by: string[] | null;
 }
 
 interface OtherUser {
@@ -30,7 +31,7 @@ const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).jo
 
 const ChatPage = () => {
   const { otherUserId } = useParams<{ otherUserId: string }>();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
@@ -55,7 +56,6 @@ const ChatPage = () => {
     const initializeChat = async () => {
       setLoading(true);
 
-      // 1. Verify that the contact has been unlocked between the two users
       const { data: connection, error: connectionError } = await supabase
         .from('unlocked_contacts')
         .select('id')
@@ -71,7 +71,6 @@ const ChatPage = () => {
       
       setIsConnectionActive(true);
 
-      // 2. Fetch the other user's profile information
       const { data: otherUserData, error: otherUserError } = await supabase
         .from('profiles')
         .select('id, name, profile_image')
@@ -86,7 +85,6 @@ const ChatPage = () => {
       }
       setOtherUser(otherUserData);
 
-      // 3. Fetch initial messages
       const { data: messagesData, error: messagesError } = await supabase
         .from('messages')
         .select('*')
@@ -97,6 +95,21 @@ const ChatPage = () => {
         console.error("Error fetching messages:", messagesError);
       } else {
         setMessages(messagesData as Message[]);
+        const unreadMessageIds = messagesData
+          .filter(msg => msg.receiver_id === user.id && !msg.read_by?.includes(user.id))
+          .map(msg => msg.id);
+
+        if (unreadMessageIds.length > 0) {
+          supabase
+            .rpc('mark_messages_as_read', { message_ids: unreadMessageIds, user_id: user.id })
+            .then(({ error }) => {
+              if (error) {
+                console.error("Error marking messages as read:", error);
+              } else {
+                refreshProfile(); // Refresh context to update indicators elsewhere
+              }
+            });
+        }
       }
       
       setLoading(false);
@@ -104,7 +117,6 @@ const ChatPage = () => {
 
     initializeChat();
 
-    // 4. Subscribe to real-time updates
     const channel = supabase
       .channel(`chat:${user.id}:${otherUserId}`)
       .on(
@@ -118,6 +130,12 @@ const ChatPage = () => {
         (payload) => {
           if (payload.new.sender_id === otherUserId) {
             setMessages((prevMessages) => [...prevMessages, payload.new as Message]);
+            // Mark the new message as read immediately
+            supabase
+              .rpc('mark_messages_as_read', { message_ids: [payload.new.id], user_id: user.id })
+              .then(({ error }) => {
+                if (error) console.error("Error marking new message as read:", error);
+              });
           }
         }
       )
@@ -126,7 +144,7 @@ const ChatPage = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, otherUserId, authLoading, navigate]);
+  }, [user, otherUserId, authLoading, navigate, refreshProfile]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +160,7 @@ const ChatPage = () => {
       ...messageToSend,
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
+      read_by: [user.id],
     };
     setMessages(prev => [...prev, optimisticMessage]);
     setNewMessage('');
@@ -160,7 +179,6 @@ const ChatPage = () => {
   }
 
   if (!isConnectionActive) {
-    // This is a fallback, the redirect should have already happened.
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center p-4">
         <Card className="max-w-md">

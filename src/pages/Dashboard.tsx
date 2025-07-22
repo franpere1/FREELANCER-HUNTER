@@ -14,7 +14,7 @@ import FeedbackDialog from '@/components/FeedbackDialog';
 import { showSuccess } from '@/utils/toast';
 
 const Dashboard = () => {
-  const { profile, loading, refreshProfile } = useAuth();
+  const { profile, loading, refreshProfile, user } = useAuth();
   const navigate = useNavigate();
   
   // State for clients
@@ -36,22 +36,9 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile || !user) return;
 
     const fetchClientData = async () => {
-      // Fetch latest providers
-      setProvidersLoading(true);
-      const { data: providersData, error: providersError } = await supabase
-        .from('profiles')
-        .select('id, name, skill, rate, profile_image, star_rating')
-        .eq('type', 'provider')
-        .order('created_at', { ascending: false })
-        .limit(5);
-      if (providersError) console.error("Error fetching latest providers:", providersError);
-      else setLatestProviders(providersData || []);
-      setProvidersLoading(false);
-
-      // Fetch active contacts (only those pending feedback)
       setActiveContactsLoading(true);
       const { data: unlockedData, error: unlockedError } = await supabase
         .from('unlocked_contacts')
@@ -70,15 +57,25 @@ const Dashboard = () => {
             .select('id, name, skill, rate, profile_image, star_rating')
             .in('id', providerIds);
           
+          const { data: unreadData } = await supabase
+            .from('messages')
+            .select('sender_id')
+            .eq('receiver_id', user.id)
+            .in('sender_id', providerIds)
+            .not('read_by', 'cs', `{${user.id}}`);
+          
+          const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
+
           if (error) {
             console.error("Error fetching provider profiles for active contacts:", error);
             setActiveContacts([]);
           } else {
-            const contactsWithFeedbackStatus = providers?.map(p => ({
+            const contactsWithStatus = providers?.map(p => ({
               ...p,
-              feedback_submitted: unlockedData.find(ud => ud.provider_id === p.id)?.feedback_submitted_for_this_unlock
+              feedback_submitted: unlockedData.find(ud => ud.provider_id === p.id)?.feedback_submitted_for_this_unlock,
+              hasUnreadMessages: unreadSenders.has(p.id),
             }));
-            setActiveContacts(contactsWithFeedbackStatus || []);
+            setActiveContacts(contactsWithStatus || []);
           }
         } else {
           setActiveContacts([]);
@@ -93,7 +90,7 @@ const Dashboard = () => {
         .from('unlocked_contacts')
         .select('client_id')
         .eq('provider_id', profile.id)
-        .eq('feedback_submitted_for_this_unlock', false); // Only show clients who haven't submitted feedback
+        .eq('feedback_submitted_for_this_unlock', false);
 
       if (unlockedError) {
         console.error("Error fetching unlocked contacts for provider:", unlockedError);
@@ -105,21 +102,52 @@ const Dashboard = () => {
             .from('profiles')
             .select('id, name, phone, email')
             .in('id', clientIds);
-          if (clientsError) console.error("Error fetching requesting clients:", clientsError);
-          setRequestingClients(clientsData || []);
+
+          const { data: unreadData } = await supabase
+            .from('messages')
+            .select('sender_id')
+            .eq('receiver_id', user.id)
+            .in('sender_id', clientIds)
+            .not('read_by', 'cs', `{${user.id}}`);
+            
+          const unreadSenders = new Set(unreadData?.map(msg => msg.sender_id) || []);
+
+          if (clientsError) {
+            console.error("Error fetching requesting clients:", clientsError);
+          } else {
+            const clientsWithStatus = clientsData?.map(c => ({
+              ...c,
+              hasUnreadMessages: unreadSenders.has(c.id),
+            }));
+            setRequestingClients(clientsWithStatus || []);
+          }
         } else {
           setRequestingClients([]);
         }
       }
       setClientsLoading(false);
     };
+    
+    const fetchLatestProvidersForClient = async () => {
+        setProvidersLoading(true);
+        const { data: providersData, error: providersError } = await supabase
+            .from('profiles')
+            .select('id, name, skill, rate, profile_image, star_rating')
+            .eq('type', 'provider')
+            .order('created_at', { ascending: false })
+            .limit(5);
+        if (providersError) console.error("Error fetching latest providers:", providersError);
+        else setLatestProviders(providersData || []);
+        setProvidersLoading(false);
+    };
 
     if (profile.type === 'client') {
       fetchClientData();
+      fetchLatestProvidersForClient();
     } else if (profile.type === 'provider') {
       fetchProviderData();
     }
-  }, [profile]);
+  }, [profile, user, refreshProfile]);
 
 
   if (loading) {
@@ -151,11 +179,7 @@ const Dashboard = () => {
     showSuccess('¡Gracias por tu comentario!');
     setIsFeedbackDialogOpen(false);
     setSelectedProviderForFeedback(null);
-    // Re-trigger fetch by refreshing profile
-    if (profile) {
-       // A bit of a hack to re-trigger the useEffect
-       refreshProfile();
-    }
+    refreshProfile();
   };
 
   return (
@@ -245,7 +269,15 @@ const Dashboard = () => {
                             </div>
                             <div className="flex flex-col sm:flex-row gap-2">
                               <Button variant="outline" size="sm" asChild><Link to={`/provider/${provider.id}`}>Ver</Link></Button>
-                              <Button size="sm" asChild><Link to={`/chat/${provider.id}`}>Chatear</Link></Button>
+                              {provider.hasUnreadMessages ? (
+                                <Button size="sm" asChild className="bg-green-500 hover:bg-green-600 text-white animate-pulse">
+                                  <Link to={`/chat/${provider.id}`}>Mensaje Nuevo</Link>
+                                </Button>
+                              ) : (
+                                <Button size="sm" asChild>
+                                  <Link to={`/chat/${provider.id}`}>Chatear</Link>
+                                </Button>
+                              )}
                               {!provider.feedback_submitted && <Button size="sm" onClick={() => { setSelectedProviderForFeedback(provider); setIsFeedbackDialogOpen(true); }}>Calificar</Button>}
                             </div>
                           </div>
@@ -262,7 +294,17 @@ const Dashboard = () => {
 
         {profile.type === 'provider' && (
           <div className="mt-8">
-            <Card><CardHeader><CardTitle>Clientes Solicitando Servicio</CardTitle></CardHeader><CardContent><ScrollArea className="h-64 pr-4">{clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client: any) => <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0"><div><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div><Button size="sm" asChild><Link to={`/chat/${client.id}`}>Chatear</Link></Button></div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}</ScrollArea></CardContent></Card>
+            <Card><CardHeader><CardTitle>Clientes Solicitando Servicio</CardTitle></CardHeader><CardContent><ScrollArea className="h-64 pr-4">{clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client: any) => <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0"><div><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div>
+            {client.hasUnreadMessages ? (
+              <Button size="sm" asChild className="bg-green-500 hover:bg-green-600 text-white animate-pulse">
+                <Link to={`/chat/${client.id}`}>Mensaje Nuevo</Link>
+              </Button>
+            ) : (
+              <Button size="sm" asChild>
+                <Link to={`/chat/${client.id}`}>Chatear</Link>
+              </Button>
+            )}
+            </div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}</ScrollArea></CardContent></Card>
           </div>
         )}
       </main>
