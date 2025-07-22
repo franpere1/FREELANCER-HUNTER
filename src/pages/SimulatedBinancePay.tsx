@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -15,6 +15,14 @@ const SimulatedBinancePay = () => {
   const [amount, setAmount] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     const usdAmount = searchParams.get('amount');
@@ -62,18 +70,24 @@ const SimulatedBinancePay = () => {
       if (updateError) throw updateError;
 
       await refreshProfile();
-      setIsSuccess(true);
-      showSuccess(`¡Pago exitoso! Has recibido ${amount} tokens.`);
-
-      // Redirect back to dashboard after a short delay
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 2000);
+      
+      if (isMounted.current) {
+        setIsSuccess(true);
+        showSuccess(`¡Pago exitoso! Has recibido ${amount} tokens.`);
+        
+        setTimeout(() => {
+          if (isMounted.current) {
+            navigate('/dashboard');
+          }
+        }, 2000);
+      }
 
     } catch (err: unknown) {
       console.error('Error al procesar el pago:', err);
       showError(err instanceof Error ? err.message : String(err || 'Error al procesar el pago.'));
-      setIsProcessing(false);
+      if (isMounted.current) {
+        setIsProcessing(false);
+      }
     }
   };
 
