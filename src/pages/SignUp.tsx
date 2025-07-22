@@ -29,6 +29,10 @@ const providerSchema = baseSchema.extend({
   category: z.string({ required_error: 'Seleccione una categoría' }),
   skill: z.string().min(2, { message: 'El oficio o habilidad es requerido' }),
   service_description: z.string().min(10, { message: 'La descripción es muy corta' }),
+  rate: z.preprocess(
+    (a) => a ? parseFloat(z.string().parse(a)) : undefined,
+    z.number().positive().optional()
+  ),
 });
 
 type ClientFormData = z.infer<typeof clientSchema>;
@@ -41,6 +45,9 @@ const SignUp = () => {
   const currentSchema = userType === 'client' ? clientSchema : providerSchema;
   const { register, handleSubmit, formState: { errors }, setValue } = useForm({
     resolver: zodResolver(currentSchema),
+    defaultValues: {
+      rate: undefined,
+    }
   });
 
   const onSubmit = async (data: ClientFormData | ProviderFormData) => {
@@ -168,6 +175,11 @@ const SignUpForm = ({ type, onSubmit, register, errors, setValue }: any) => (
                 <Label htmlFor="service_description">Descripción del Servicio</Label>
                 <Textarea id="service_description" {...register('service_description')} />
                 {errors.service_description && <p className="text-red-500 text-xs mt-1">{errors.service_description.message}</p>}
+              </div>
+              <div>
+                <Label htmlFor="rate">Costo Aproximado del Servicio (BCV)</Label>
+                <Input id="rate" type="number" step="0.01" {...register('rate')} />
+                {errors.rate && <p className="text-red-500 text-xs mt-1">{errors.rate.message}</p>}
               </div>
             </>
           )}

@@ -10,6 +10,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
+import EditProfile from "./pages/EditProfile";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
             
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/edit-profile" element={<EditProfile />} />
             </Route>
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

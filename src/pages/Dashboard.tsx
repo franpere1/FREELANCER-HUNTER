@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { Edit } from 'lucide-react';
 
 const Dashboard = () => {
   const { profile, loading } = useAuth();
@@ -41,6 +42,7 @@ const Dashboard = () => {
   }
 
   const getInitials = (name: string) => {
+    if (!name) return '';
     return name
       .split(' ')
       .map((n) => n[0])
@@ -53,15 +55,21 @@ const Dashboard = () => {
       <main className="container mx-auto p-4 md:p-8">
         <Card className="max-w-2xl mx-auto">
           <CardHeader>
-            <div className="flex items-center space-x-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={profile.profile_image} alt={profile.name} />
-                <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
-              </Avatar>
-              <div>
-                <CardTitle className="text-2xl">{profile.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{profile.email}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={profile.profile_image || undefined} alt={profile.name} />
+                  <AvatarFallback>{getInitials(profile.name)}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <CardTitle className="text-2xl">{profile.name}</CardTitle>
+                  <p className="text-sm text-muted-foreground">{profile.email}</p>
+                </div>
               </div>
+              <Button variant="outline" size="icon" onClick={() => navigate('/edit-profile')}>
+                <Edit className="h-4 w-4" />
+                <span className="sr-only">Editar Perfil</span>
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -80,19 +88,31 @@ const Dashboard = () => {
               </div>
             </div>
             {profile.type === 'provider' && (
-              <div className="space-y-2 pt-4 border-t">
-                <div>
-                  <p className="font-semibold">Categoría de Servicio</p>
-                  <p>{profile.category}</p>
-                </div>
-                <div>
-                  <p className="font-semibold">Oficio o Habilidad</p>
-                  <p>{profile.skill}</p>
+              <div className="space-y-4 pt-4 border-t">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-semibold">Categoría de Servicio</p>
+                    <p>{profile.category}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">Oficio o Habilidad</p>
+                    <p>{profile.skill}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">Costo Aproximado del Servicio (BCV)</p>
+                    <p>{profile.rate ? `${profile.rate}` : 'No especificado'}</p>
+                  </div>
                 </div>
                 <div>
                   <p className="font-semibold">Descripción del Servicio</p>
                   <p className="text-muted-foreground">{profile.service_description}</p>
                 </div>
+                {profile.service_image && (
+                  <div className="space-y-2">
+                    <p className="font-semibold">Imagen del Servicio</p>
+                    <img src={profile.service_image} alt="Servicio" className="rounded-lg max-w-sm border" />
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
