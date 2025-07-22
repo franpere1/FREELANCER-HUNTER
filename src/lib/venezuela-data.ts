@@ -1,0 +1,35 @@
+export const venezuelaStates = [
+  "Amazonas",
+  "Anzoátegui",
+  "Apure",
+  "Aragua",
+  "Barinas",
+  "Bolívar",
+  "Carabobo",
+  "Cojedes",
+  "Delta Amacuro",
+  "Distrito Capital",
+  "Falcón",
+  "Guárico",
+  "Lara",
+  "Mérida",
+  "Miranda",
+  "Monagas",
+  "Nueva Esparta",
+  "Portuguesa",
+  "Sucre",
+  "Táchira",
+  "Trujillo",
+  "Vargas",
+  "Yaracuy",
+  "Zulia",
+];
+
+// Nota: Esta es una lista simplificada. Una aplicación real necesitaría una lista completa.
+export const citiesByState: { [key: string]: string[] } = {
+  "Distrito Capital": ["Caracas"],
+  Miranda: ["Los Teques", "Guarenas", "Guatire"],
+  Carabobo: ["Valencia", "Puerto Cabello", "Guacara"],
+  Zulia: ["Maracaibo", "Cabimas", "Ciudad Ojeda"],
+  Lara: ["Barquisimeto", "Carora", "El Tocuyo"],
+};
