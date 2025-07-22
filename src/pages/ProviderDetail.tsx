@@ -65,91 +65,76 @@ const ProviderDetail = () => {
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [requestingClients, setRequestingClients] = useState<RequestingClient[]>([]);
   const [clientsLoading, setClientsLoading] = useState(true);
+  const [refetch, setRefetch] = useState(false);
 
   const getInitials = (name: string) => {
     if (!name) return '';
     return name.split(' ').map((n) => n[0]).join('');
   };
 
-  const fetchProviderAndUnlockedStatus = useCallback(async () => {
-    if (!id || !user) {
-      setLoading(false);
-      return;
-    }
-    
-    const { data: providerData, error: providerError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', id)
-      .single();
+  useEffect(() => {
+    const fetchDetails = async () => {
+      if (!id || !user) {
+        setLoading(false);
+        return;
+      }
 
-    if (providerError) {
-      console.error("Error fetching provider:", providerError);
-      showError('Error al cargar la información del proveedor.');
-      setProvider(null);
-      setLoading(false);
-      return;
-    }
-    setProvider(providerData);
+      const { data: providerData, error: providerError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .single();
 
-    // Scenario 1: The logged-in user is the provider being viewed
-    if (user.id === providerData.id) {
-      setClientsLoading(true);
-      const { data: unlockedData, error: unlockedError } = await supabase
-        .from('unlocked_contacts')
-        .select('client_id')
-        .eq('provider_id', providerData.id);
+      if (providerError) {
+        console.error("Error fetching provider:", providerError);
+        showError('Error al cargar la información del proveedor.');
+        setProvider(null);
+        setLoading(false);
+        return;
+      }
+      setProvider(providerData);
 
-      if (unlockedError) {
-        console.error("Error fetching unlocked contacts:", unlockedError);
-        setRequestingClients([]);
-      } else {
-        const clientIds = unlockedData.map(uc => uc.client_id);
-        if (clientIds.length > 0) {
-          const { data: clientsData, error: clientsError } = await supabase
-            .from('profiles')
-            .select('id, name, phone, email')
-            .in('id', clientIds);
+      if (user.id === providerData.id) {
+        setClientsLoading(true);
+        const { data: unlockedData, error: unlockedError } = await supabase
+          .from('unlocked_contacts')
+          .select('client_id')
+          .eq('provider_id', providerData.id);
 
-          if (clientsError) {
-            console.error("Error fetching client profiles:", clientsError);
-            setRequestingClients([]);
+        if (!unlockedError && unlockedData) {
+          const clientIds = unlockedData.map(uc => uc.client_id);
+          if (clientIds.length > 0) {
+            const { data: clientsData, error: clientsError } = await supabase
+              .from('profiles')
+              .select('id, name, phone, email')
+              .in('id', clientIds);
+            setRequestingClients(clientsError ? [] : (clientsData as RequestingClient[]));
           } else {
-            setRequestingClients(clientsData as RequestingClient[]);
+            setRequestingClients([]);
           }
         } else {
           setRequestingClients([]);
         }
-      }
-      setClientsLoading(false);
-    } 
-    // Scenario 2: The logged-in user is a client viewing a provider
-    else if (clientProfile && clientProfile.type === 'client') {
-      const { data: unlockedContact, error: unlockedError } = await supabase
-        .from('unlocked_contacts')
-        .select('*')
-        .eq('client_id', user.id)
-        .eq('provider_id', id)
-        .single();
+        setClientsLoading(false);
+      } else if (clientProfile && clientProfile.type === 'client') {
+        const { data: unlockedContact, error: unlockedError } = await supabase
+          .from('unlocked_contacts')
+          .select('*')
+          .eq('client_id', user.id)
+          .eq('provider_id', id)
+          .single();
 
-      if (unlockedError && unlockedError.code !== 'PGRST116') {
-        console.error("Error fetching unlocked contact:", unlockedError);
+        if (unlockedContact && !unlockedError) {
+          setUnlockedContactRecord(unlockedContact);
+          setIsContactUnlocked(true);
+        } else {
+          setUnlockedContactRecord(null);
+          setIsContactUnlocked(false);
+        }
       }
+      setLoading(false);
+    };
 
-      if (unlockedContact) {
-        setUnlockedContactRecord(unlockedContact);
-        setIsContactUnlocked(true);
-      } else {
-        setUnlockedContactRecord(null);
-        setIsContactUnlocked(false);
-      }
-    }
-    
-    setLoading(false);
-  }, [id, clientProfile, user]);
-
-  useEffect(() => {
-    // Reset state on ID change to prevent stale data from previous page
     setLoading(true);
     setProvider(null);
     setIsContactUnlocked(false);
@@ -158,9 +143,9 @@ const ProviderDetail = () => {
     setClientsLoading(true);
 
     if (!authLoading) {
-      fetchProviderAndUnlockedStatus();
+      fetchDetails();
     }
-  }, [id, authLoading, fetchProviderAndUnlockedStatus]);
+  }, [id, authLoading, user, clientProfile, refetch]);
 
   const handleUnlockContact = async () => {
     if (!user || clientProfile?.type !== 'client' || !id) {
@@ -182,8 +167,8 @@ const ProviderDetail = () => {
       dismissToast(toastId);
       showSuccess(result);
       
-      await refreshProfile(); 
-      await fetchProviderAndUnlockedStatus();
+      await refreshProfile();
+      setRefetch(r => !r);
 
     } catch (err: unknown) {
       dismissToast(toastId);
@@ -195,8 +180,8 @@ const ProviderDetail = () => {
   const handleFeedbackSubmitted = async () => {
     setIsFeedbackDialogOpen(false);
     showSuccess('¡Gracias por tu comentario!');
-    await fetchProviderAndUnlockedStatus();
     await refreshProfile();
+    setRefetch(r => !r);
   };
 
   if (loading || authLoading) {
