@@ -261,7 +261,7 @@ const ProviderDetail = () => {
             <div className="space-y-2 pt-4 border-t">
               <p className="font-semibold text-gray-700">Comentarios de Clientes</p>
               <ScrollArea className="h-48 w-full rounded-md border p-4 bg-gray-50">
-                {provider.feedback && provider.feedback.length > 0 ? provider.feedback.map((fb: any, index: number) => <div key={index} className="mb-3 pb-3 border-b last:border-b-0"><p className="text-sm font-medium">{fb.comment}</p><p className="text-xs text-muted-foreground">{new Date(fb.timestamp).toLocaleDateString()}</p></div>) : <p className="text-sm text-muted-foreground text-center py-8">No hay comentarios aún para este proveedor.</p>}
+                {provider.feedback && provider.feedback.length > 0 ? [...provider.feedback].reverse().map((fb: any) => <div key={fb.id} className="mb-3 pb-3 border-b last:border-b-0"><p className="text-sm font-medium">{fb.comment}</p><p className="text-xs text-muted-foreground">{new Date(fb.timestamp).toLocaleDateString()}</p></div>) : <p className="text-sm text-muted-foreground text-center py-8">No hay comentarios aún para este proveedor.</p>}
               </ScrollArea>
             </div>
             {user && provider && user.id === provider.id && (
