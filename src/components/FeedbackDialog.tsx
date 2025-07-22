@@ -16,6 +16,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { showError, showLoading, dismissToast } from '@/utils/toast';
+import { ThumbsUp, ThumbsDown, Meh } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const feedbackSchema = z.object({
   feedbackType: z.enum(['positive', 'negative', 'neutral'], {
@@ -91,22 +93,52 @@ const FeedbackDialog: React.FC<FeedbackDialogProps> = ({
             <RadioGroup
               onValueChange={(value: 'positive' | 'negative' | 'neutral') => setValue('feedbackType', value, { shouldValidate: true })}
               value={watchedFeedbackType}
-              className="flex space-x-4"
+              className="grid grid-cols-3 gap-4"
             >
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="positive" id="positive" />
-                <Label htmlFor="positive">Positivo</Label>
+              <div>
+                <RadioGroupItem value="positive" id="positive" className="sr-only" />
+                <Label
+                  htmlFor="positive"
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-colors",
+                    "hover:bg-green-50 hover:border-green-400",
+                    watchedFeedbackType === 'positive' ? "border-green-500 bg-green-100 text-green-900" : "border-gray-200"
+                  )}
+                >
+                  <ThumbsUp className="h-8 w-8 mb-2" />
+                  <span className="font-medium text-sm">Positivo</span>
+                </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="neutral" id="neutral" />
-                <Label htmlFor="neutral">Neutral</Label>
+              <div>
+                <RadioGroupItem value="neutral" id="neutral" className="sr-only" />
+                <Label
+                  htmlFor="neutral"
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-colors",
+                    "hover:bg-yellow-50 hover:border-yellow-400",
+                    watchedFeedbackType === 'neutral' ? "border-yellow-500 bg-yellow-100 text-yellow-900" : "border-gray-200"
+                  )}
+                >
+                  <Meh className="h-8 w-8 mb-2" />
+                  <span className="font-medium text-sm">Neutral</span>
+                </Label>
               </div>
-              <div className="flex items-center space-x-2">
-                <RadioGroupItem value="negative" id="negative" />
-                <Label htmlFor="negative">Negativo</Label>
+              <div>
+                <RadioGroupItem value="negative" id="negative" className="sr-only" />
+                <Label
+                  htmlFor="negative"
+                  className={cn(
+                    "flex flex-col items-center justify-center p-4 border-2 rounded-lg cursor-pointer transition-colors",
+                    "hover:bg-red-50 hover:border-red-400",
+                    watchedFeedbackType === 'negative' ? "border-red-500 bg-red-100 text-red-900" : "border-gray-200"
+                  )}
+                >
+                  <ThumbsDown className="h-8 w-8 mb-2" />
+                  <span className="font-medium text-sm">Negativo</span>
+                </Label>
               </div>
             </RadioGroup>
-            {errors.feedbackType && <p className="text-red-500 text-xs mt-1">{errors.feedbackType.message}</p>}
+            {errors.feedbackType && <p className="text-red-500 text-xs mt-1 text-center">{errors.feedbackType.message}</p>}
           </div>
 
           <div className="space-y-2">
