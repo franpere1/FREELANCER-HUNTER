@@ -53,17 +53,29 @@ const EditProfile = () => {
   }, [profile, setValue]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'service') => {
-    const file = e.target.files?.[0];
-    if (file) {
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      const file = files[0];
       const reader = new FileReader();
       reader.onloadend = () => {
         if (type === 'profile') {
           setProfileImagePreview(reader.result as string);
+          setValue('profile_image_file', files, { shouldValidate: true }); // Actualiza el valor del formulario
         } else {
           setServiceImagePreview(reader.result as string);
+          setValue('service_image_file', files, { shouldValidate: true }); // Actualiza el valor del formulario
         }
       };
       reader.readAsDataURL(file);
+    } else {
+      // Si no se selecciona ningún archivo, limpia la vista previa y el valor del formulario
+      if (type === 'profile') {
+        setProfileImagePreview(null);
+        setValue('profile_image_file', undefined, { shouldValidate: true });
+      } else {
+        setServiceImagePreview(null);
+        setValue('service_image_file', undefined, { shouldValidate: true });
+      }
     }
   };
 
@@ -82,7 +94,7 @@ const EditProfile = () => {
     }
 
     const { data } = supabase.storage.from(bucket).getPublicUrl(filePath);
-    console.log(`Public URL for ${bucket}:`, data.publicUrl); // Log de la URL pública
+    console.log(`Public URL for ${bucket}:`, data.publicUrl);
     return data.publicUrl;
   };
 
@@ -119,7 +131,7 @@ const EditProfile = () => {
         updateData.service_image = serviceImageUrl;
       }
 
-      console.log('Data being sent to Supabase profiles table:', updateData); // Log de los datos a enviar
+      console.log('Data being sent to Supabase profiles table:', updateData);
 
       const { error } = await supabase
         .from('profiles')
@@ -165,7 +177,16 @@ const EditProfile = () => {
               </Avatar>
               <div>
                 <Label htmlFor="profile_image_file">Foto de Perfil</Label>
-                <Input id="profile_image_file" type="file" accept="image/*" {...register('profile_image_file')} onChange={(e) => handleFileChange(e, 'profile')} />
+                <Input
+                  id="profile_image_file"
+                  type="file"
+                  accept="image/*"
+                  {...register('profile_image_file')}
+                  onChange={(e) => {
+                    handleFileChange(e, 'profile');
+                    register('profile_image_file').onChange(e); // Llama al onChange de react-hook-form
+                  }}
+                />
               </div>
             </div>
 
@@ -203,7 +224,16 @@ const EditProfile = () => {
                   </div>
                   <div>
                     <Label htmlFor="service_image_file">Foto del Servicio</Label>
-                    <Input id="service_image_file" type="file" accept="image/*" {...register('service_image_file')} onChange={(e) => handleFileChange(e, 'service')} />
+                    <Input
+                      id="service_image_file"
+                      type="file"
+                      accept="image/*"
+                      {...register('service_image_file')}
+                      onChange={(e) => {
+                        handleFileChange(e, 'service');
+                        register('service_image_file').onChange(e); // Llama al onChange de react-hook-form
+                      }}
+                    />
                   </div>
                 </div>
               </div>
