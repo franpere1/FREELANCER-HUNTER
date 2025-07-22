@@ -52,6 +52,7 @@ interface RequestingClient {
   name: string;
   phone: string;
   email: string;
+  profile_image: string | null;
   hasUnreadMessages?: boolean;
 }
 
@@ -112,7 +113,7 @@ const ProviderDetail = () => {
             const clientIds = unlockedData.map(uc => uc.client_id);
             const { data: clientsData, error: clientsError } = await supabase
               .from('profiles')
-              .select('id, name, phone, email')
+              .select('id, name, phone, email, profile_image')
               .in('id', clientIds);
             
             const { data: unreadData } = await supabase
@@ -251,7 +252,7 @@ const ProviderDetail = () => {
                     </AlertDialogContent>
                   </AlertDialog>
                 ) : (
-                  <Button asChild className="w-full sm:w-auto"><Link to={`/chat/${provider.id}`}>Ir al Chat</Link></Button>
+                  <Button asChild className="w-full sm:w-auto"><Link to={`/chat/${provider.id}`} state={{ otherUser: provider }}>Ir al Chat</Link></Button>
                 )}
                 {canShowFeedbackButton && <Button variant="secondary" onClick={() => setIsFeedbackDialogOpen(true)} className="w-full sm:w-auto">Calificar</Button>}
               </div>
@@ -295,11 +296,11 @@ const ProviderDetail = () => {
                   {clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client) => <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0"><div><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div>
                   {client.hasUnreadMessages ? (
                     <Button asChild size="sm" className="bg-green-500 hover:bg-green-600 text-white animate-pulse">
-                      <Link to={`/chat/${client.id}`}>Mensaje Nuevo</Link>
+                      <Link to={`/chat/${client.id}`} state={{ otherUser: client }}>Mensaje Nuevo</Link>
                     </Button>
                   ) : (
                     <Button asChild size="sm">
-                      <Link to={`/chat/${client.id}`}>Chatear</Link>
+                      <Link to={`/chat/${client.id}`} state={{ otherUser: client }}>Chatear</Link>
                     </Button>
                   )}
                   </div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}

@@ -92,7 +92,7 @@ const Dashboard = () => {
         const clientIds = unlockedData.map(uc => uc.client_id);
 
         const [clientsResult, unreadResult] = await Promise.all([
-          supabase.from('profiles').select('id, name, phone, email').in('id', clientIds),
+          supabase.from('profiles').select('id, name, phone, email, profile_image').in('id', clientIds),
           supabase.from('messages').select('sender_id').eq('receiver_id', user.id).in('sender_id', clientIds).not('read_by', 'cs', `{${user.id}}`)
         ]);
 
@@ -314,11 +314,11 @@ const Dashboard = () => {
                               <Button variant="outline" size="sm" asChild><Link to={`/provider/${provider.id}`}>Ver</Link></Button>
                               {provider.hasUnreadMessages ? (
                                 <Button size="sm" asChild className="bg-green-500 hover:bg-green-600 text-white animate-pulse">
-                                  <Link to={`/chat/${provider.id}`}>Mensaje Nuevo</Link>
+                                  <Link to={`/chat/${provider.id}`} state={{ otherUser: provider }}>Mensaje Nuevo</Link>
                                 </Button>
                               ) : (
                                 <Button size="sm" asChild>
-                                  <Link to={`/chat/${provider.id}`}>Chatear</Link>
+                                  <Link to={`/chat/${provider.id}`} state={{ otherUser: provider }}>Chatear</Link>
                                 </Button>
                               )}
                               {!provider.feedback_submitted && <Button size="sm" onClick={() => { setSelectedProviderForFeedback(provider); setIsFeedbackDialogOpen(true); }}>Calificar</Button>}
@@ -381,11 +381,11 @@ const Dashboard = () => {
             <Card><CardHeader><CardTitle>Clientes Solicitando Servicio</CardTitle></CardHeader><CardContent><ScrollArea className="h-64 pr-4">{clientsLoading ? <p className="text-sm text-muted-foreground text-center py-8">Cargando clientes...</p> : requestingClients.length > 0 ? requestingClients.map((client: any) => <div key={client.id} className="flex items-center justify-between mb-3 pb-3 border-b last:border-b-0"><div><p className="text-sm font-semibold">{client.name}</p><p className="text-xs text-muted-foreground">Tel: {client.phone}</p><p className="text-xs text-muted-foreground">Correo: {client.email}</p></div>
             {client.hasUnreadMessages ? (
               <Button size="sm" asChild className="bg-green-500 hover:bg-green-600 text-white animate-pulse">
-                <Link to={`/chat/${client.id}`}>Mensaje Nuevo</Link>
+                <Link to={`/chat/${client.id}`} state={{ otherUser: client }}>Mensaje Nuevo</Link>
               </Button>
             ) : (
               <Button size="sm" asChild>
-                <Link to={`/chat/${client.id}`}>Chatear</Link>
+                <Link to={`/chat/${client.id}`} state={{ otherUser: client }}>Chatear</Link>
               </Button>
             )}
             </div>) : <p className="text-sm text-muted-foreground text-center py-8">Nadie ha solicitado tu servicio aún.</p>}</ScrollArea></CardContent></Card>
