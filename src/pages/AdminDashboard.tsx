@@ -18,6 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 interface Profile {
   id: string;
@@ -33,17 +36,35 @@ interface Profile {
   rate: number | null;
 }
 
+const adminPasswordSchema = z.object({
+  currentPassword: z.string().min(1, { message: 'La contraseña actual es requerida.' }),
+  newPassword: z.string().min(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres.' }),
+  confirmNewPassword: z.string(),
+}).refine((data) => data.newPassword === data.confirmNewPassword, {
+  message: "Las nuevas contraseñas no coinciden.",
+  path: ["confirmNewPassword"],
+});
+
+type AdminPasswordFormData = z.infer<typeof adminPasswordSchema>;
+
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [providers, setProviders] = useState<Profile[]>([]);
   const [clients, setClients] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [newPassword, setNewPassword] = useState('');
-  const [isSaving, setIsSaving] = useState(false);
   const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProviders, setFilteredProviders] = useState<Profile[]>([]);
   const [filteredClients, setFilteredClients] = useState<Profile[]>([]);
+
+  const { 
+    register: registerPassword, 
+    handleSubmit: handlePasswordSubmit, 
+    formState: { errors: passwordErrors, isSubmitting },
+    reset: resetPasswordForm 
+  } = useForm<AdminPasswordFormData>({
+    resolver: zodResolver(adminPasswordSchema),
+  });
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -104,28 +125,39 @@ const AdminDashboard = () => {
     navigate('/admin/login');
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword.length < 6) {
-      showError('La nueva contraseña debe tener al menos 6 caracteres.');
-      return;
-    }
-    setIsSaving(true);
-    const toastId = showLoading('Guardando nueva contraseña...');
+  const onPasswordChangeSubmit = async (data: AdminPasswordFormData) => {
+    const toastId = showLoading('Actualizando contraseña...');
     try {
-      const { data: settings, error: fetchError } = await supabase.from('settings').select('id').limit(1).single();
-      if (fetchError || !settings) throw new Error('No se pudo encontrar la configuración para actualizar.');
-      const { error: updateError } = await supabase.from('settings').update({ admin_password: newPassword }).eq('id', settings.id);
-      if (updateError) throw updateError;
+      const { data: settings, error: fetchError } = await supabase
+        .from('settings')
+        .select('id, admin_password')
+        .limit(1)
+        .single();
+
+      if (fetchError || !settings) {
+        throw new Error('No se pudo obtener la configuración del administrador.');
+      }
+
+      if (data.currentPassword !== settings.admin_password) {
+        throw new Error('La contraseña actual es incorrecta.');
+      }
+
+      const { error: updateError } = await supabase
+        .from('settings')
+        .update({ admin_password: data.newPassword })
+        .eq('id', settings.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
       dismissToast(toastId);
-      showSuccess('¡Contraseña actualizada con éxito!');
-      setNewPassword('');
+      showSuccess('¡Contraseña de administrador actualizada con éxito!');
+      resetPasswordForm();
+
     } catch (error: any) {
       dismissToast(toastId);
-      console.error('Error updating password:', error);
       showError(error.message || 'No se pudo actualizar la contraseña.');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -165,12 +197,23 @@ const AdminDashboard = () => {
         <Card className="mb-8">
           <CardHeader><CardTitle>Cambiar Contraseña de Administrador</CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={handleChangePassword} className="space-y-4">
+            <form onSubmit={handlePasswordSubmit(onPasswordChangeSubmit)} className="space-y-4">
+              <div>
+                <Label htmlFor="currentPassword">Contraseña Actual</Label>
+                <Input id="currentPassword" type="password" {...registerPassword('currentPassword')} />
+                {passwordErrors.currentPassword && <p className="text-red-500 text-xs mt-1">{passwordErrors.currentPassword.message}</p>}
+              </div>
               <div>
                 <Label htmlFor="newPassword">Nueva Contraseña</Label>
-                <Input id="newPassword" type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Introduce la nueva contraseña (mín. 6 caracteres)" />
+                <Input id="newPassword" type="password" {...registerPassword('newPassword')} placeholder="Mínimo 6 caracteres" />
+                {passwordErrors.newPassword && <p className="text-red-500 text-xs mt-1">{passwordErrors.newPassword.message}</p>}
               </div>
-              <Button type="submit" disabled={isSaving}>{isSaving ? 'Guardando...' : 'Guardar Contraseña'}</Button>
+              <div>
+                <Label htmlFor="confirmNewPassword">Confirmar Nueva Contraseña</Label>
+                <Input id="confirmNewPassword" type="password" {...registerPassword('confirmNewPassword')} />
+                {passwordErrors.confirmNewPassword && <p className="text-red-500 text-xs mt-1">{passwordErrors.confirmNewPassword.message}</p>}
+              </div>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Guardando...' : 'Guardar Contraseña'}</Button>
             </form>
           </CardContent>
         </Card>
