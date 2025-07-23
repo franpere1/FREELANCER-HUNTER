@@ -13,6 +13,9 @@ import { AuthProvider } from "./context/AuthContext";
 import EditProfile from "./pages/EditProfile";
 import ProviderDetail from "./pages/ProviderDetail";
 import ChatPage from "./pages/ChatPage";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminProtectedRoute from "./components/AdminProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +27,13 @@ const App = () => (
       <HashRouter>
         <AuthProvider>
           <Routes>
+            {/* Admin Routes - outside normal user flow */}
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route element={<AdminProtectedRoute />}>
+              <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            </Route>
+
+            {/* User Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/login" element={<Login />} />
