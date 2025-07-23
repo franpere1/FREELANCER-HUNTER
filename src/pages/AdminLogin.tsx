@@ -30,7 +30,7 @@ const AdminLogin = () => {
   });
 
   const onSubmit = ({ email, password }: LoginFormData) => {
-    if (email === 'admin@admin.com' && password === 'kilmanjaro') {
+    if (email === 'admin@admin.com' && password === 'kilimanjaro') {
       sessionStorage.setItem('isAdmin', 'true');
       navigate('/admin/dashboard');
     } else {
