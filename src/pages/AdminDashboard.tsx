@@ -41,6 +41,9 @@ const AdminDashboard = () => {
   const [newPassword, setNewPassword] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [userToDelete, setUserToDelete] = useState<Profile | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredProviders, setFilteredProviders] = useState<Profile[]>([]);
+  const [filteredClients, setFilteredClients] = useState<Profile[]>([]);
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -52,14 +55,49 @@ const AdminDashboard = () => {
       if (error) {
         console.error('Error fetching profiles:', error);
       } else {
-        setProviders(data.filter(p => p.type === 'provider'));
-        setClients(data.filter(p => p.type === 'client'));
+        const allProviders = data.filter(p => p.type === 'provider');
+        const allClients = data.filter(p => p.type === 'client');
+        setProviders(allProviders);
+        setClients(allClients);
+        setFilteredProviders(allProviders);
+        setFilteredClients(allClients);
       }
       setLoading(false);
     };
 
     fetchProfiles();
   }, []);
+
+  useEffect(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    
+    const filteredP = providers.filter(p => {
+      return (
+        p.name.toLowerCase().includes(lowercasedFilter) ||
+        p.email.toLowerCase().includes(lowercasedFilter) ||
+        (p.phone && p.phone.toLowerCase().includes(lowercasedFilter)) ||
+        (p.country && p.country.toLowerCase().includes(lowercasedFilter)) ||
+        (p.state && p.state.toLowerCase().includes(lowercasedFilter)) ||
+        (p.city && p.city.toLowerCase().includes(lowercasedFilter)) ||
+        (p.skill && p.skill.toLowerCase().includes(lowercasedFilter)) ||
+        (p.category && p.category.toLowerCase().includes(lowercasedFilter))
+      );
+    });
+    setFilteredProviders(filteredP);
+  
+    const filteredC = clients.filter(c => {
+      return (
+        c.name.toLowerCase().includes(lowercasedFilter) ||
+        c.email.toLowerCase().includes(lowercasedFilter) ||
+        (c.phone && c.phone.toLowerCase().includes(lowercasedFilter)) ||
+        (c.country && c.country.toLowerCase().includes(lowercasedFilter)) ||
+        (c.state && c.state.toLowerCase().includes(lowercasedFilter)) ||
+        (c.city && c.city.toLowerCase().includes(lowercasedFilter))
+      );
+    });
+    setFilteredClients(filteredC);
+  
+  }, [searchTerm, providers, clients]);
 
   const handleLogout = () => {
     sessionStorage.removeItem('isAdmin');
@@ -137,14 +175,26 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
 
+        <Card className="mb-8">
+          <CardHeader><CardTitle>Buscar Usuarios</CardTitle></CardHeader>
+          <CardContent>
+            <Input
+              type="text"
+              placeholder="Buscar por nombre, email, oficio, ubicación..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </CardContent>
+        </Card>
+
         {loading ? <p>Cargando datos...</p> : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <Card>
-              <CardHeader><CardTitle>Proveedores ({providers.length})</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Proveedores ({filteredProviders.length})</CardTitle></CardHeader>
               <CardContent>
-                <ScrollArea className="h-[70vh]">
+                <ScrollArea className="h-[60vh]">
                   <div className="space-y-4">
-                    {providers.map(provider => (
+                    {filteredProviders.map(provider => (
                       <div key={provider.id} className="p-4 border rounded-md">
                         <div className="flex justify-between items-start">
                           <div>
@@ -165,11 +215,11 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
             <Card>
-              <CardHeader><CardTitle>Clientes ({clients.length})</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Clientes ({filteredClients.length})</CardTitle></CardHeader>
               <CardContent>
-                <ScrollArea className="h-[70vh]">
+                <ScrollArea className="h-[60vh]">
                   <div className="space-y-4">
-                    {clients.map(client => (
+                    {filteredClients.map(client => (
                       <div key={client.id} className="p-4 border rounded-md">
                         <div className="flex justify-between items-start">
                           <div>
