@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { countries, State } from '@/lib/location-data';
+import { countries } from '@/lib/location-data';
 import { showError, showSuccess } from '@/utils/toast';
 
 const baseSchema = z.object({
@@ -22,7 +22,7 @@ const baseSchema = z.object({
   phone: z.string().min(10, { message: 'El teléfono es requerido' }),
   country: z.string({ required_error: 'Seleccione un país' }),
   state: z.string({ required_error: 'Seleccione un estado' }),
-  city: z.string({ required_error: 'Seleccione una ciudad' }),
+  city: z.string().min(2, { message: 'La ciudad es requerida' }),
 });
 
 const clientSchema = baseSchema;
@@ -52,22 +52,13 @@ const SignUp = () => {
   });
 
   const watchedCountry = watch('country');
-  const watchedState = watch('state');
-  const [states, setStates] = useState<State[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
+  const [states, setStates] = useState<string[]>([]);
 
   useEffect(() => {
     const countryData = countries.find(c => c.name === watchedCountry);
     setStates(countryData ? countryData.states : []);
     setValue('state', '', { shouldValidate: false });
-    setValue('city', '', { shouldValidate: false });
   }, [watchedCountry, setValue]);
-
-  useEffect(() => {
-    const stateData = states.find(s => s.name === watchedState);
-    setCities(stateData ? stateData.cities : []);
-    setValue('city', '', { shouldValidate: false });
-  }, [watchedState, states, setValue]);
 
   const onSubmit = async (data: ClientFormData | ProviderFormData) => {
     const { email, password, name, lastName, ...rest } = data;
@@ -107,7 +98,6 @@ const SignUp = () => {
           errors={errors}
           setValue={setValue}
           states={states}
-          cities={cities}
         />
         <SignUpForm
           type="provider"
@@ -116,14 +106,13 @@ const SignUp = () => {
           errors={errors}
           setValue={setValue}
           states={states}
-          cities={cities}
         />
       </Tabs>
     </div>
   );
 };
 
-const SignUpForm = ({ type, onSubmit, register, errors, setValue, states, cities }: any) => (
+const SignUpForm = ({ type, onSubmit, register, errors, setValue, states }: any) => (
   <TabsContent value={type}>
     <Card>
       <CardHeader>
@@ -174,20 +163,15 @@ const SignUpForm = ({ type, onSubmit, register, errors, setValue, states, cities
               <Select onValueChange={(value) => setValue('state', value, { shouldValidate: true })} disabled={states.length === 0}>
                 <SelectTrigger><SelectValue placeholder="Seleccione estado" /></SelectTrigger>
                 <SelectContent>
-                  {states.map((state: State) => <SelectItem key={state.name} value={state.name}>{state.name}</SelectItem>)}
+                  {states.map((state: string) => <SelectItem key={state} value={state}>{state}</SelectItem>)}
                 </SelectContent>
               </Select>
               {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state.message}</p>}
             </div>
           </div>
           <div>
-            <Label>Ciudad</Label>
-            <Select onValueChange={(value) => setValue('city', value, { shouldValidate: true })} disabled={cities.length === 0}>
-              <SelectTrigger><SelectValue placeholder="Seleccione ciudad" /></SelectTrigger>
-              <SelectContent>
-                {cities.map((city: string) => <SelectItem key={city} value={city}>{city}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <Label htmlFor="city">Ciudad</Label>
+            <Input id="city" {...register('city')} />
             {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
           </div>
           {type === 'provider' && (

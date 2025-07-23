@@ -1,166 +1,60 @@
-export interface State {
-  name: string;
-  cities: string[];
-}
-
 export interface Country {
   name: string;
-  states: State[];
+  states: string[];
 }
 
 export const countries: Country[] = [
   {
     name: 'Venezuela',
     states: [
-      { name: "Amazonas", cities: ["Puerto Ayacucho", "San Fernando de Atabapo"] },
-      { name: "Anzoátegui", cities: ["Barcelona", "Puerto La Cruz", "Lechería", "El Tigre", "Anaco"] },
-      { name: "Apure", cities: ["San Fernando de Apure", "Guasdualito", "Achaguas"] },
-      { name: "Aragua", cities: ["Maracay", "Turmero", "La Victoria", "Cagua", "Villa de Cura"] },
-      { name: "Barinas", cities: ["Barinas", "Socopó", "Santa Bárbara"] },
-      { name: "Bolívar", cities: ["Ciudad Bolívar", "Ciudad Guayana", "Upata", "Caicara del Orinoco"] },
-      { name: "Carabobo", cities: ["Valencia", "Puerto Cabello", "Guacara", "Naguanagua", "San Diego"] },
-      { name: "Cojedes", cities: ["San Carlos", "Tinaquillo", "Tinaco"] },
-      { name: "Delta Amacuro", cities: ["Tucupita", "Pedernales"] },
-      { name: "Distrito Capital", cities: ["Caracas"] },
-      { name: "Falcón", cities: ["Coro", "Punto Fijo", "Tucacas", "Chichiriviche"] },
-      { name: "Guárico", cities: ["San Juan de los Morros", "Calabozo", "Valle de la Pascua"] },
-      { name: "Lara", cities: ["Barquisimeto", "Carora", "Cabudare", "El Tocuyo"] },
-      { name: "Mérida", cities: ["Mérida", "El Vigía", "Ejido", "Tovar"] },
-      { name: "Miranda", cities: ["Los Teques", "Guarenas", "Guatire", "Petare", "Ocumare del Tuy"] },
-      { name: "Monagas", cities: ["Maturín", "Punta de Mata", "Caripito"] },
-      { name: "Nueva Esparta", cities: ["La Asunción", "Porlamar", "Pampatar", "Juan Griego"] },
-      { name: "Portuguesa", cities: ["Guanare", "Acarigua", "Araure"] },
-      { name: "Sucre", cities: ["Cumaná", "Carúpano", "Güiria"] },
-      { name: "Táchira", cities: ["San Cristóbal", "Táriba", "Rubio", "La Grita"] },
-      { name: "Trujillo", cities: ["Trujillo", "Valera", "Boconó"] },
-      { name: "Vargas", cities: ["La Guaira", "Catia La Mar", "Maiquetía"] },
-      { name: "Yaracuy", cities: ["San Felipe", "Yaritagua", "Chivacoa"] },
-      { name: "Zulia", cities: ["Maracaibo", "Cabimas", "Ciudad Ojeda", "Machiques"] }
+      "Amazonas", "Anzoátegui", "Apure", "Aragua", "Barinas", "Bolívar",
+      "Carabobo", "Cojedes", "Delta Amacuro", "Distrito Capital", "Falcón",
+      "Guárico", "Lara", "Mérida", "Miranda", "Monagas", "Nueva Esparta",
+      "Portuguesa", "Sucre", "Táchira", "Trujillo", "Vargas", "Yaracuy", "Zulia"
     ],
   },
   {
     name: 'Colombia',
     states: [
-      { name: "Amazonas", cities: ["Leticia", "Puerto Nariño"] },
-      { name: "Antioquia", cities: ["Medellín", "Bello", "Itagüí", "Envigado", "Rionegro"] },
-      { name: "Arauca", cities: ["Arauca", "Saravena", "Tame"] },
-      { name: "Atlántico", cities: ["Barranquilla", "Soledad", "Malambo"] },
-      { name: "Bolívar", cities: ["Cartagena", "Magangué", "Turbaco"] },
-      { name: "Boyacá", cities: ["Tunja", "Duitama", "Sogamoso"] },
-      { name: "Caldas", cities: ["Manizales", "La Dorada", "Chinchiná"] },
-      { name: "Caquetá", cities: ["Florencia", "San Vicente del Caguán"] },
-      { name: "Casanare", cities: ["Yopal", "Aguazul", "Villanueva"] },
-      { name: "Cauca", cities: ["Popayán", "Santander de Quilichao"] },
-      { name: "Cesar", cities: ["Valledupar", "Aguachica", "Agustín Codazzi"] },
-      { name: "Chocó", cities: ["Quibdó", "Istmina"] },
-      { name: "Córdoba", cities: ["Montería", "Cereté", "Sahagún"] },
-      { name: "Cundinamarca", cities: ["Bogotá D.C.", "Soacha", "Girardot", "Zipaquirá"] },
-      { name: "Guainía", cities: ["Inírida"] },
-      { name: "Guaviare", cities: ["San José del Guaviare"] },
-      { name: "Huila", cities: ["Neiva", "Pitalito", "Garzón"] },
-      { name: "La Guajira", cities: ["Riohacha", "Maicao", "Uribia"] },
-      { name: "Magdalena", cities: ["Santa Marta", "Ciénaga", "Fundación"] },
-      { name: "Meta", cities: ["Villavicencio", "Acacías", "Granada"] },
-      { name: "Nariño", cities: ["Pasto", "Tumaco", "Ipiales"] },
-      { name: "Norte de Santander", cities: ["Cúcuta", "Ocaña", "Pamplona"] },
-      { name: "Putumayo", cities: ["Mocoa", "Puerto Asís", "Orito"] },
-      { name: "Quindío", cities: ["Armenia", "Calarcá", "Montenegro"] },
-      { name: "Risaralda", cities: ["Pereira", "Dosquebradas", "Santa Rosa de Cabal"] },
-      { name: "San Andrés y Providencia", cities: ["San Andrés"] },
-      { name: "Santander", cities: ["Bucaramanga", "Floridablanca", "Barrancabermeja", "Girón"] },
-      { name: "Sucre", cities: ["Sincelejo", "Corozal", "Tolú"] },
-      { name: "Tolima", cities: ["Ibagué", "Espinal", "Melgar"] },
-      { name: "Valle del Cauca", cities: ["Cali", "Buenaventura", "Palmira", "Tuluá"] },
-      { name: "Vaupés", cities: ["Mitú"] },
-      { name: "Vichada", cities: ["Puerto Carreño"] }
+      "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá",
+      "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba",
+      "Cundinamarca", "Guainía", "Guaviare", "Huila", "La Guajira", "Magdalena",
+      "Meta", "Nariño", "Norte de Santander", "Putumayo", "Quindío", "Risaralda",
+      "San Andrés y Providencia", "Santander", "Sucre", "Tolima", "Valle del Cauca",
+      "Vaupés", "Vichada"
     ],
   },
   {
     name: 'Ecuador',
     states: [
-      { name: "Azuay", cities: ["Cuenca", "Gualaceo", "Paute"] },
-      { name: "Bolívar", cities: ["Guaranda", "San Miguel"] },
-      { name: "Cañar", cities: ["Azogues", "La Troncal"] },
-      { name: "Carchi", cities: ["Tulcán", "San Gabriel"] },
-      { name: "Chimborazo", cities: ["Riobamba", "Alausí"] },
-      { name: "Cotopaxi", cities: ["Latacunga", "Salcedo"] },
-      { name: "El Oro", cities: ["Machala", "Santa Rosa", "Huaquillas"] },
-      { name: "Esmeraldas", cities: ["Esmeraldas", "Atacames", "Muisne"] },
-      { name: "Galápagos", cities: ["Puerto Baquerizo Moreno", "Puerto Ayora"] },
-      { name: "Guayas", cities: ["Guayaquil", "Durán", "Samborondón", "Salinas"] },
-      { name: "Imbabura", cities: ["Ibarra", "Otavalo", "Cotacachi"] },
-      { name: "Loja", cities: ["Loja", "Catamayo", "Macará"] },
-      { name: "Los Ríos", cities: ["Babahoyo", "Quevedo", "Vinces"] },
-      { name: "Manabí", cities: ["Portoviejo", "Manta", "Chone", "Bahía de Caráquez"] },
-      { name: "Morona Santiago", cities: ["Macas", "Sucúa"] },
-      { name: "Napo", cities: ["Tena", "Archidona"] },
-      { name: "Orellana", cities: ["Francisco de Orellana (El Coca)"] },
-      { name: "Pastaza", cities: ["Puyo"] },
-      { name: "Pichincha", cities: ["Quito", "Sangolquí", "Cayambe"] },
-      { name: "Santa Elena", cities: ["Santa Elena", "La Libertad"] },
-      { name: "Santo Domingo de los Tsáchilas", cities: ["Santo Domingo"] },
-      { name: "Sucumbíos", cities: ["Nueva Loja (Lago Agrio)"] },
-      { name: "Tungurahua", cities: ["Ambato", "Baños de Agua Santa", "Pelileo"] },
-      { name: "Zamora Chinchipe", cities: ["Zamora", "Yantzaza"] }
+      "Azuay", "Bolívar", "Cañar", "Carchi", "Chimborazo", "Cotopaxi", "El Oro",
+      "Esmeraldas", "Galápagos", "Guayas", "Imbabura", "Loja", "Los Ríos",
+      "Manabí", "Morona Santiago", "Napo", "Orellana", "Pastaza", "Pichincha",
+      "Santa Elena", "Santo Domingo de los Tsáchilas", "Sucumbíos", "Tungurahua",
+      "Zamora Chinchipe"
     ],
   },
   {
     name: 'Peru',
     states: [
-      { name: "Amazonas", cities: ["Chachapoyas", "Bagua Grande"] },
-      { name: "Ancash", cities: ["Huaraz", "Chimbote"] },
-      { name: "Apurímac", cities: ["Abancay", "Andahuaylas"] },
-      { name: "Arequipa", cities: ["Arequipa", "Camaná", "Mollendo"] },
-      { name: "Ayacucho", cities: ["Ayacucho", "Huanta"] },
-      { name: "Cajamarca", cities: ["Cajamarca", "Jaén"] },
-      { name: "Callao", cities: ["Callao"] },
-      { name: "Cusco", cities: ["Cusco", "Urubamba", "Sicuani"] },
-      { name: "Huancavelica", cities: ["Huancavelica"] },
-      { name: "Huánuco", cities: ["Huánuco", "Tingo María"] },
-      { name: "Ica", cities: ["Ica", "Pisco", "Chincha Alta", "Nazca"] },
-      { name: "Junín", cities: ["Huancayo", "Tarma", "Jauja"] },
-      { name: "La Libertad", cities: ["Trujillo", "Chepén", "Pacasmayo"] },
-      { name: "Lambayeque", cities: ["Chiclayo", "Lambayeque", "Ferreñafe"] },
-      { name: "Lima", cities: ["Lima", "Huacho", "Barranca", "Cañete"] },
-      { name: "Loreto", cities: ["Iquitos", "Yurimaguas"] },
-      { name: "Madre de Dios", cities: ["Puerto Maldonado"] },
-      { name: "Moquegua", cities: ["Moquegua", "Ilo"] },
-      { name: "Pasco", cities: ["Cerro de Pasco"] },
-      { name: "Piura", cities: ["Piura", "Sullana", "Talara", "Paita"] },
-      { name: "Puno", cities: ["Puno", "Juliaca"] },
-      { name: "San Martín", cities: ["Moyobamba", "Tarapoto", "Juanjuí"] },
-      { name: "Tacna", cities: ["Tacna"] },
-      { name: "Tumbes", cities: ["Tumbes"] },
-      { name: "Ucayali", cities: ["Pucallpa"] }
+      "Amazonas", "Ancash", "Apurímac", "Arequipa", "Ayacucho", "Cajamarca",
+      "Callao", "Cusco", "Huancavelica", "Huánuco", "Ica", "Junín", "La Libertad",
+      "Lambayeque", "Lima", "Loreto", "Madre de Dios", "Moquegua", "Pasco",
+      "Piura", "Puno", "San Martín", "Tacna", "Tumbes", "Ucayali"
     ],
   },
   {
     name: 'Bolivia',
     states: [
-      { name: "Beni", cities: ["Trinidad", "Riberalta", "Guayaramerín"] },
-      { name: "Chuquisaca", cities: ["Sucre"] },
-      { name: "Cochabamba", cities: ["Cochabamba", "Quillacollo", "Sacaba"] },
-      { name: "La Paz", cities: ["La Paz", "El Alto", "Viacha"] },
-      { name: "Oruro", cities: ["Oruro", "Huanuni"] },
-      { name: "Pando", cities: ["Cobija"] },
-      { name: "Potosí", cities: ["Potosí", "Uyuni", "Tupiza"] },
-      { name: "Santa Cruz", cities: ["Santa Cruz de la Sierra", "Montero", "Warnes"] },
-      { name: "Tarija", cities: ["Tarija", "Yacuiba", "Bermejo"] }
+      "Beni", "Chuquisaca", "Cochabamba", "La Paz", "Oruro", "Pando", "Potosí",
+      "Santa Cruz", "Tarija"
     ],
   },
   {
     name: 'Panama',
     states: [
-      { name: "Bocas del Toro", cities: ["Bocas del Toro", "Changuinola", "Almirante"] },
-      { name: "Chiriquí", cities: ["David", "Boquete", "Volcán"] },
-      { name: "Coclé", cities: ["Penonomé", "Aguadulce"] },
-      { name: "Colón", cities: ["Colón", "Portobelo"] },
-      { name: "Darién", cities: ["La Palma", "Yaviza"] },
-      { name: "Herrera", cities: ["Chitré", "Ocú"] },
-      { name: "Los Santos", cities: ["Las Tablas", "Pedasí"] },
-      { name: "Panamá", cities: ["Panamá", "San Miguelito", "Tocumen", "Chepo"] },
-      { name: "Panamá Oeste", cities: ["La Chorrera", "Arraiján", "Capira"] },
-      { name: "Veraguas", cities: ["Santiago", "Soná"] }
+      "Bocas del Toro", "Chiriquí", "Coclé", "Colón", "Darién", "Herrera",
+      "Los Santos", "Panamá", "Panamá Oeste", "Veraguas"
     ],
   },
 ];

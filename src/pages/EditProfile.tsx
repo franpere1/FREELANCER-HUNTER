@@ -14,14 +14,14 @@ import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { countries, State } from '@/lib/location-data';
+import { countries } from '@/lib/location-data';
 
 const editProfileSchema = z.object({
   name: z.string().min(2, { message: 'El nombre es requerido' }),
   phone: z.string().min(10, { message: 'El teléfono es requerido' }),
   country: z.string({ required_error: 'Seleccione un país' }),
   state: z.string({ required_error: 'Seleccione un estado' }),
-  city: z.string({ required_error: 'Seleccione una ciudad' }),
+  city: z.string().min(2, { message: 'La ciudad es requerida' }),
   skill: z.string().optional(),
   service_description: z.string().optional(),
   rate: z.preprocess(
@@ -45,8 +45,7 @@ const EditProfile = () => {
   const { profile, user, loading, refreshProfile } = useAuth();
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [serviceImagePreview, setServiceImagePreview] = useState<string | null>(null);
-  const [states, setStates] = useState<State[]>([]);
-  const [cities, setCities] = useState<string[]>([]);
+  const [states, setStates] = useState<string[]>([]);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<EditProfileFormData>({
     resolver: zodResolver(editProfileSchema),
@@ -55,37 +54,11 @@ const EditProfile = () => {
   const watchedProfileImageFile = watch('profile_image_file');
   const watchedServiceImageFile = watch('service_image_file');
   const watchedCountry = watch('country');
-  const watchedState = watch('state');
-
-  useEffect(() => {
-    if (profile) {
-      const countryData = countries.find(c => c.name === profile.country);
-      if (countryData) {
-        setStates(countryData.states);
-        const stateData = countryData.states.find(s => s.name === profile.state);
-        if (stateData) {
-          setCities(stateData.cities);
-        }
-      }
-    }
-  }, [profile]);
 
   useEffect(() => {
     const countryData = countries.find(c => c.name === watchedCountry);
     setStates(countryData ? countryData.states : []);
-    if (profile && watchedCountry !== profile.country) {
-      setValue('state', '');
-      setValue('city', '');
-    }
-  }, [watchedCountry, profile, setValue]);
-
-  useEffect(() => {
-    const stateData = states.find(s => s.name === watchedState);
-    setCities(stateData ? stateData.cities : []);
-    if (profile && watchedState !== profile.state) {
-      setValue('city', '');
-    }
-  }, [watchedState, states, profile, setValue]);
+  }, [watchedCountry]);
 
   useEffect(() => {
     if (profile) {
@@ -274,20 +247,15 @@ const EditProfile = () => {
                 <Select onValueChange={(value) => setValue('state', value, { shouldValidate: true })} value={watch('state')} disabled={states.length === 0}>
                   <SelectTrigger className={cn(errors.state && "border-red-500")}><SelectValue placeholder="Seleccione estado" /></SelectTrigger>
                   <SelectContent>
-                    {states.map((state: State) => <SelectItem key={state.name} value={state.name}>{state.name}</SelectItem>)}
+                    {states.map((state: string) => <SelectItem key={state} value={state}>{state}</SelectItem>)}
                   </SelectContent>
                 </Select>
                 {errors.state && <p className="text-red-500 text-sm font-semibold mt-1">{errors.state.message}</p>}
               </div>
             </div>
              <div>
-                <Label>Ciudad</Label>
-                <Select onValueChange={(value) => setValue('city', value, { shouldValidate: true })} value={watch('city')} disabled={cities.length === 0}>
-                  <SelectTrigger className={cn(errors.city && "border-red-500")}><SelectValue placeholder="Seleccione ciudad" /></SelectTrigger>
-                  <SelectContent>
-                    {cities.map((city: string) => <SelectItem key={city} value={city}>{city}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="city">Ciudad</Label>
+                <Input id="city" {...register('city')} className={cn(errors.city && "border-red-500")} />
                 {errors.city && <p className="text-red-500 text-sm font-semibold mt-1">{errors.city.message}</p>}
               </div>
 
