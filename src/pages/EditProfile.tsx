@@ -39,7 +39,16 @@ const editProfileSchema = z.object({
   service_image_file: z.instanceof(FileList).optional(),
 });
 
+const passwordSchema = z.object({
+  newPassword: z.string().min(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres.' }),
+  confirmPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: "Las contraseñas no coinciden.",
+  path: ["confirmPassword"],
+});
+
 type EditProfileFormData = z.infer<typeof editProfileSchema>;
+type PasswordFormData = z.infer<typeof passwordSchema>;
 
 const EditProfile = () => {
   const navigate = useNavigate();
@@ -50,6 +59,15 @@ const EditProfile = () => {
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<EditProfileFormData>({
     resolver: zodResolver(editProfileSchema),
+  });
+
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors, isSubmitting: isPasswordSubmitting },
+    reset: resetPasswordForm,
+  } = useForm<PasswordFormData>({
+    resolver: zodResolver(passwordSchema),
   });
 
   const watchedProfileImageFile = watch('profile_image_file');
@@ -182,6 +200,28 @@ const EditProfile = () => {
     }
   };
 
+  const onPasswordSubmit = async (data: PasswordFormData) => {
+    const toastId = showLoading('Actualizando contraseña...');
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: data.newPassword,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      dismissToast(toastId);
+      showSuccess('¡Contraseña actualizada con éxito!');
+      resetPasswordForm();
+
+    } catch (err: any) {
+      dismissToast(toastId);
+      console.error('Error al actualizar contraseña:', err);
+      showError(err.message || 'Ocurrió un error al actualizar la contraseña.');
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">Cargando...</div>;
   }
@@ -193,7 +233,7 @@ const EditProfile = () => {
   const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).join('') : '';
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 space-y-8">
       <Card className="w-full max-w-2xl">
         <CardHeader>
           <CardTitle>Editar Perfil</CardTitle>
@@ -299,7 +339,35 @@ const EditProfile = () => {
 
             <div className="flex justify-end space-x-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>Cancelar</Button>
-              <Button type="submit" disabled={isSubmitting}>Guardar Cambios</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <CardTitle>Cambiar Contraseña</CardTitle>
+          <CardDescription>Asegúrate de usar una contraseña segura.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4">
+            <div>
+              <Label htmlFor="newPassword">Nueva Contraseña</Label>
+              <Input id="newPassword" type="password" {...registerPassword('newPassword')} className={cn(passwordErrors.newPassword && "border-red-500")} />
+              {passwordErrors.newPassword && <p className="text-red-500 text-sm font-semibold mt-1">{passwordErrors.newPassword.message}</p>}
+            </div>
+            <div>
+              <Label htmlFor="confirmPassword">Confirmar Nueva Contraseña</Label>
+              <Input id="confirmPassword" type="password" {...registerPassword('confirmPassword')} className={cn(passwordErrors.confirmPassword && "border-red-500")} />
+              {passwordErrors.confirmPassword && <p className="text-red-500 text-sm font-semibold mt-1">{passwordErrors.confirmPassword.message}</p>}
+            </div>
+            <div className="flex justify-end pt-2">
+              <Button type="submit" disabled={isPasswordSubmitting}>
+                {isPasswordSubmitting ? 'Guardando...' : 'Actualizar Contraseña'}
+              </Button>
             </div>
           </form>
         </CardContent>
