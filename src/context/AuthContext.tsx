@@ -7,7 +7,7 @@ interface Profile {
   id: string;
   name: string;
   email: string;
-  state: string;
+  state: string | null;
   phone: string;
   type: 'client' | 'provider';
   category: string | null;
@@ -19,6 +19,8 @@ interface Profile {
   rate: number | null;
   token_balance: number | null;
   feedback: any[] | null;
+  country: string | null;
+  city: string | null;
 }
 
 interface AuthContextType {

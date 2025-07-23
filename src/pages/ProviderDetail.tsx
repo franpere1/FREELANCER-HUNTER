@@ -26,7 +26,9 @@ interface ProviderProfile {
   id: string;
   name: string;
   email: string;
-  state: string;
+  country: string | null;
+  state: string | null;
+  city: string | null;
   phone: string;
   type: 'client' | 'provider';
   category: string | null;
@@ -249,7 +251,7 @@ const ProviderDetail = () => {
           </CardHeader>
           <CardContent className="space-y-6 p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-base">
-              <div><p className="font-semibold text-gray-700">Ubicación</p><p>{provider.state}</p></div>
+              <div><p className="font-semibold text-gray-700">Ubicación</p><p>{[provider.city, provider.state, provider.country].filter(Boolean).join(', ')}</p></div>
               <div><p className="font-semibold text-gray-700">Categoría de Servicio</p><p>{provider.category || 'No especificado'}</p></div>
               <div><p className="font-semibold text-gray-700">Teléfono:</p><p className={isClient && !isContactUnlocked ? 'blur-sm' : ''}>{provider.phone}</p></div>
               <div><p className="font-semibold text-gray-700">Correo:</p><p className={isClient && !isContactUnlocked ? 'blur-sm' : ''}>{provider.email}</p></div>

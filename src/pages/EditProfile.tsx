@@ -13,10 +13,15 @@ import { useAuth } from '@/context/AuthContext';
 import { useEffect, useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { countries } from '@/lib/location-data';
 
 const editProfileSchema = z.object({
   name: z.string().min(2, { message: 'El nombre es requerido' }),
   phone: z.string().min(10, { message: 'El teléfono es requerido' }),
+  country: z.string({ required_error: 'Seleccione un país' }),
+  state: z.string({ required_error: 'Seleccione un estado' }),
+  city: z.string().min(2, { message: 'La ciudad es requerida' }),
   skill: z.string().optional(),
   service_description: z.string().optional(),
   rate: z.preprocess(
@@ -40,6 +45,7 @@ const EditProfile = () => {
   const { profile, user, loading, refreshProfile } = useAuth();
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [serviceImagePreview, setServiceImagePreview] = useState<string | null>(null);
+  const [states, setStates] = useState<string[]>([]);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<EditProfileFormData>({
     resolver: zodResolver(editProfileSchema),
@@ -47,11 +53,20 @@ const EditProfile = () => {
 
   const watchedProfileImageFile = watch('profile_image_file');
   const watchedServiceImageFile = watch('service_image_file');
+  const watchedCountry = watch('country');
+
+  useEffect(() => {
+    const countryData = countries.find(c => c.name === watchedCountry);
+    setStates(countryData ? countryData.states : []);
+  }, [watchedCountry]);
 
   useEffect(() => {
     if (profile) {
       setValue('name', profile.name ?? '');
       setValue('phone', profile.phone ?? '');
+      setValue('country', profile.country ?? '');
+      setValue('state', profile.state ?? '');
+      setValue('city', profile.city ?? '');
       setProfileImagePreview(profile.profile_image);
       if (profile.type === 'provider') {
         setValue('skill', profile.skill ?? '');
@@ -134,6 +149,9 @@ const EditProfile = () => {
       const updateData: any = {
         name: data.name,
         phone: data.phone,
+        country: data.country,
+        state: data.state,
+        city: data.city,
         profile_image: profileImageUrl,
       };
 
@@ -173,12 +191,6 @@ const EditProfile = () => {
 
   const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).join('') : '';
 
-  useEffect(() => {
-    if (Object.keys(errors).length > 0) {
-      console.log("Validation Errors:", errors);
-    }
-  }, [errors]);
-
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
       <Card className="w-full max-w-2xl">
@@ -188,12 +200,6 @@ const EditProfile = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {Object.keys(errors).length > 0 && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                <strong className="font-bold">¡Error de validación!</strong>
-                <span className="block sm:inline"> Por favor, revisa los campos marcados.</span>
-              </div>
-            )}
             <div className="flex items-center space-x-4">
               <Avatar className="h-24 w-24">
                 <AvatarImage src={profileImagePreview || undefined} />
@@ -224,6 +230,34 @@ const EditProfile = () => {
                 {errors.phone && <p className="text-red-500 text-sm font-semibold mt-1">{errors.phone.message}</p>}
               </div>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+               <div>
+                <Label>País</Label>
+                <Select onValueChange={(value) => setValue('country', value, { shouldValidate: true })} value={watchedCountry}>
+                  <SelectTrigger className={cn(errors.country && "border-red-500")}><SelectValue placeholder="Seleccione país" /></SelectTrigger>
+                  <SelectContent>
+                    {countries.map(country => <SelectItem key={country.name} value={country.name}>{country.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {errors.country && <p className="text-red-500 text-sm font-semibold mt-1">{errors.country.message}</p>}
+              </div>
+              <div>
+                <Label>Estado</Label>
+                <Select onValueChange={(value) => setValue('state', value, { shouldValidate: true })} value={watch('state')} disabled={states.length === 0}>
+                  <SelectTrigger className={cn(errors.state && "border-red-500")}><SelectValue placeholder="Seleccione estado" /></SelectTrigger>
+                  <SelectContent>
+                    {states.map((state: string) => <SelectItem key={state} value={state}>{state}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {errors.state && <p className="text-red-500 text-sm font-semibold mt-1">{errors.state.message}</p>}
+              </div>
+            </div>
+             <div>
+                <Label htmlFor="city">Ciudad</Label>
+                <Input id="city" {...register('city')} className={cn(errors.city && "border-red-500")} />
+                {errors.city && <p className="text-red-500 text-sm font-semibold mt-1">{errors.city.message}</p>}
+              </div>
 
             {profile.type === 'provider' && (
               <div className="space-y-4 pt-4 border-t">

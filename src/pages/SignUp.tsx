@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { venezuelaStates } from '@/lib/venezuela-data';
+import { countries } from '@/lib/location-data';
 import { showError, showSuccess } from '@/utils/toast';
 
 const baseSchema = z.object({
@@ -20,6 +20,7 @@ const baseSchema = z.object({
   name: z.string().min(2, { message: 'El nombre es requerido' }),
   lastName: z.string().min(2, { message: 'El apellido es requerido' }),
   phone: z.string().min(10, { message: 'El teléfono es requerido' }),
+  country: z.string({ required_error: 'Seleccione un país' }),
   state: z.string({ required_error: 'Seleccione un estado' }),
   city: z.string().min(2, { message: 'La ciudad es requerida' }),
 });
@@ -43,12 +44,21 @@ const SignUp = () => {
   const [userType, setUserType] = useState<'client' | 'provider'>('client');
 
   const currentSchema = userType === 'client' ? clientSchema : providerSchema;
-  const { register, handleSubmit, formState: { errors }, setValue } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
     resolver: zodResolver(currentSchema),
     defaultValues: {
       rate: undefined,
     }
   });
+
+  const watchedCountry = watch('country');
+  const [states, setStates] = useState<string[]>([]);
+
+  useEffect(() => {
+    const countryData = countries.find(c => c.name === watchedCountry);
+    setStates(countryData ? countryData.states : []);
+    setValue('state', '', { shouldValidate: false });
+  }, [watchedCountry, setValue]);
 
   const onSubmit = async (data: ClientFormData | ProviderFormData) => {
     const { email, password, name, lastName, ...rest } = data;
@@ -75,8 +85,8 @@ const SignUp = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <Tabs defaultValue="client" onValueChange={(value) => setUserType(value as 'client' | 'provider')} className="w-[400px]">
+    <div className="flex items-center justify-center min-h-screen bg-gray-100 p-4">
+      <Tabs defaultValue="client" onValueChange={(value) => setUserType(value as 'client' | 'provider')} className="w-full max-w-md">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="client">Soy Cliente</TabsTrigger>
           <TabsTrigger value="provider">Soy Proveedor</TabsTrigger>
@@ -87,6 +97,7 @@ const SignUp = () => {
           register={register}
           errors={errors}
           setValue={setValue}
+          states={states}
         />
         <SignUpForm
           type="provider"
@@ -94,13 +105,14 @@ const SignUp = () => {
           register={register}
           errors={errors}
           setValue={setValue}
+          states={states}
         />
       </Tabs>
     </div>
   );
 };
 
-const SignUpForm = ({ type, onSubmit, register, errors, setValue }: any) => (
+const SignUpForm = ({ type, onSubmit, register, errors, setValue, states }: any) => (
   <TabsContent value={type}>
     <Card>
       <CardHeader>
@@ -137,20 +149,30 @@ const SignUpForm = ({ type, onSubmit, register, errors, setValue }: any) => (
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
+              <Label>País</Label>
+              <Select onValueChange={(value) => setValue('country', value, { shouldValidate: true })}>
+                <SelectTrigger><SelectValue placeholder="Seleccione país" /></SelectTrigger>
+                <SelectContent>
+                  {countries.map(country => <SelectItem key={country.name} value={country.name}>{country.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country.message}</p>}
+            </div>
+            <div>
               <Label>Estado</Label>
-              <Select onValueChange={(value) => setValue('state', value, { shouldValidate: true })}>
+              <Select onValueChange={(value) => setValue('state', value, { shouldValidate: true })} disabled={states.length === 0}>
                 <SelectTrigger><SelectValue placeholder="Seleccione estado" /></SelectTrigger>
                 <SelectContent>
-                  {venezuelaStates.map(state => <SelectItem key={state} value={state}>{state}</SelectItem>)}
+                  {states.map((state: string) => <SelectItem key={state} value={state}>{state}</SelectItem>)}
                 </SelectContent>
               </Select>
               {errors.state && <p className="text-red-500 text-xs mt-1">{errors.state.message}</p>}
             </div>
-            <div>
-              <Label htmlFor="city">Ciudad</Label>
-              <Input id="city" {...register('city')} />
-              {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
-            </div>
+          </div>
+          <div>
+            <Label htmlFor="city">Ciudad</Label>
+            <Input id="city" {...register('city')} />
+            {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city.message}</p>}
           </div>
           {type === 'provider' && (
             <>

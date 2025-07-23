@@ -317,7 +317,7 @@ const Dashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div><p className="font-semibold text-gray-600">Tipo de Cuenta</p><p className="capitalize">{profile.type === 'client' ? 'Cliente' : 'Proveedor'}</p></div>
                 <div><p className="font-semibold text-gray-600">Teléfono</p><p>{profile.phone}</p></div>
-                <div><p className="font-semibold text-gray-600">Ubicación</p><p>{profile.state}</p></div>
+                <div><p className="font-semibold text-gray-600">Ubicación</p><p>{[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</p></div>
               </div>
               {profile.type === 'provider' && (
                 <div className="space-y-4 pt-4 border-t">
