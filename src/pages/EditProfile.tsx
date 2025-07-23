@@ -15,6 +15,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries } from '@/lib/location-data';
+import { capitalizeWords } from '@/lib/utils';
 
 const editProfileSchema = z.object({
   name: z.string().min(2, { message: 'El nombre es requerido' }),
@@ -151,7 +152,7 @@ const EditProfile = () => {
         phone: data.phone,
         country: data.country,
         state: data.state,
-        city: data.city,
+        city: capitalizeWords(data.city),
         profile_image: profileImageUrl,
       };
 

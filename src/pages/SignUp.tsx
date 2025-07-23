@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { countries } from '@/lib/location-data';
 import { showError, showSuccess } from '@/utils/toast';
+import { capitalizeWords } from '@/lib/utils';
 
 const baseSchema = z.object({
   email: z.string().email({ message: 'Correo electrónico inválido' }),
@@ -64,6 +65,11 @@ const SignUp = () => {
     const { email, password, name, lastName, ...rest } = data;
     const fullName = `${name} ${lastName}`;
 
+    const processedRest = {
+      ...rest,
+      city: capitalizeWords(rest.city),
+    };
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -71,7 +77,7 @@ const SignUp = () => {
         data: {
           name: fullName,
           type: userType,
-          ...rest,
+          ...processedRest,
         },
       },
     });
