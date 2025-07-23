@@ -183,10 +183,10 @@ const AdminDashboard = () => {
       return (
         c.name.toLowerCase().includes(lowercasedFilter) ||
         c.email.toLowerCase().includes(lowercasedFilter) ||
-        (p.phone && p.phone.toLowerCase().includes(lowercasedFilter)) ||
-        (p.country && p.country.toLowerCase().includes(lowercasedFilter)) ||
-        (p.state && p.state.toLowerCase().includes(lowercasedFilter)) ||
-        (p.city && p.city.toLowerCase().includes(lowercasedFilter))
+        (c.phone && c.phone.toLowerCase().includes(lowercasedFilter)) ||
+        (c.country && c.country.toLowerCase().includes(lowercasedFilter)) ||
+        (c.state && c.state.toLowerCase().includes(lowercasedFilter)) ||
+        (c.city && c.city.toLowerCase().includes(lowercasedFilter))
       );
     });
     setFilteredClients(filteredC);

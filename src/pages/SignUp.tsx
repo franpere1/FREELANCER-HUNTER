@@ -45,11 +45,22 @@ const SignUp = () => {
   const [userType, setUserType] = useState<'client' | 'provider'>('client');
 
   const currentSchema = userType === 'client' ? clientSchema : providerSchema;
-  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<ProviderFormData>({
     resolver: zodResolver(currentSchema),
     defaultValues: {
+      email: '',
+      password: '',
+      name: '',
+      lastName: '',
+      phone: '',
+      country: '',
+      state: '',
+      city: '',
+      category: '',
+      skill: '',
+      service_description: '',
       rate: undefined,
-    }
+    },
   });
 
   const watchedCountry = watch('country');
