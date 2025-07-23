@@ -1,11 +1,13 @@
 export interface Country {
   name: string;
+  code: string;
   states: string[];
 }
 
 export const countries: Country[] = [
   {
     name: 'Bolivia',
+    code: 'BO',
     states: [
       "Beni", "Chuquisaca", "Cochabamba", "La Paz", "Oruro", "Pando", "Potosí",
       "Santa Cruz", "Tarija"
@@ -13,6 +15,7 @@ export const countries: Country[] = [
   },
   {
     name: 'Colombia',
+    code: 'CO',
     states: [
       "Amazonas", "Antioquia", "Arauca", "Atlántico", "Bolívar", "Boyacá",
       "Caldas", "Caquetá", "Casanare", "Cauca", "Cesar", "Chocó", "Córdoba",
@@ -24,6 +27,7 @@ export const countries: Country[] = [
   },
   {
     name: 'Cuba',
+    code: 'CU',
     states: [
       "Pinar del Río", "Artemisa", "La Habana", "Mayabeque", "Matanzas",
       "Cienfuegos", "Villa Clara", "Sancti Spíritus", "Ciego de Ávila",
@@ -33,6 +37,7 @@ export const countries: Country[] = [
   },
   {
     name: 'Ecuador',
+    code: 'EC',
     states: [
       "Azuay", "Bolívar", "Cañar", "Carchi", "Chimborazo", "Cotopaxi", "El Oro",
       "Esmeraldas", "Galápagos", "Guayas", "Imbabura", "Loja", "Los Ríos",
@@ -43,6 +48,7 @@ export const countries: Country[] = [
   },
   {
     name: 'Panama',
+    code: 'PA',
     states: [
       "Bocas del Toro", "Chiriquí", "Coclé", "Colón", "Darién", "Herrera",
       "Los Santos", "Panamá", "Panamá Oeste", "Veraguas"
@@ -50,6 +56,7 @@ export const countries: Country[] = [
   },
   {
     name: 'Peru',
+    code: 'PE',
     states: [
       "Amazonas", "Ancash", "Apurímac", "Arequipa", "Ayacucho", "Cajamarca",
       "Callao", "Cusco", "Huancavelica", "Huánuco", "Ica", "Junín", "La Libertad",
@@ -59,6 +66,7 @@ export const countries: Country[] = [
   },
   {
     name: 'Venezuela',
+    code: 'VE',
     states: [
       "Amazonas", "Anzoátegui", "Apure", "Aragua", "Barinas", "Bolívar",
       "Carabobo", "Cojedes", "Delta Amacuro", "Distrito Capital", "Falcón",

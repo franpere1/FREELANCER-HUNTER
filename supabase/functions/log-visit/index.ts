@@ -24,7 +24,7 @@ serve(async (req) => {
     
     // Supabase Edge Functions provee la geolocalización en esta cabecera
     const locationHeader = req.headers.get('x-supabase-edge-location');
-    let country = 'Unknown';
+    let country: string | null = null;
 
     if (locationHeader) {
       // El formato es "city=CITY, country=COUNTRY_CODE, ..."

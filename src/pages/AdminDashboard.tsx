@@ -21,6 +21,7 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { countries } from '@/lib/location-data';
 
 interface Profile {
   id: string;
@@ -67,6 +68,13 @@ const AdminDashboard = () => {
   const [visitCount, setVisitCount] = useState(0);
   const [lastVisits, setLastVisits] = useState<VisitLog[]>([]);
   const [visitsLoading, setVisitsLoading] = useState(true);
+
+  const countryMap = new Map(countries.map(c => [c.code, c.name]));
+
+  const getCountryName = (code: string | null | undefined): string => {
+    if (!code) return 'Desconocido';
+    return countryMap.get(code) || code;
+  };
 
   const { 
     register: registerPassword, 
@@ -284,7 +292,7 @@ const AdminDashboard = () => {
                           <Globe className="h-4 w-4 text-gray-500 flex-shrink-0" />
                           <span className="font-medium">
                             {visit.profiles ? visit.profiles.name : 'Anónimo'}
-                            <span className="text-gray-600 font-normal ml-1">({visit.country || 'Desconocido'})</span>
+                            <span className="text-gray-600 font-normal ml-1">({getCountryName(visit.country)})</span>
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500 text-xs">
