@@ -30,7 +30,10 @@ const AdminLogin = () => {
   });
 
   const onSubmit = ({ email, password }: LoginFormData) => {
-    if (email === 'admin@admin.com' && password === 'kilimanjaro') {
+    // Paso de depuración: Imprimir las credenciales en la consola del navegador
+    console.log("Intento de inicio de sesión de administrador con:", { email: email.trim(), password });
+
+    if (email.trim() === 'admin@admin.com' && password === 'kilimanjaro') {
       sessionStorage.setItem('isAdmin', 'true');
       navigate('/admin/dashboard');
     } else {
