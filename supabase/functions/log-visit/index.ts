@@ -22,8 +22,18 @@ serve(async (req) => {
     // Obtener el user_id del cuerpo de la solicitud (si existe)
     const { user_id } = await req.json().catch(() => ({ user_id: null }));
     
-    // Supabase Edge Runtime provee el país del IP en esta cabecera
-    const country = req.headers.get('x-vercel-ip-country') ?? 'Unknown';
+    // Supabase Edge Functions provee la geolocalización en esta cabecera
+    const locationHeader = req.headers.get('x-supabase-edge-location');
+    let country = 'Unknown';
+
+    if (locationHeader) {
+      // El formato es "city=CITY, country=COUNTRY_CODE, ..."
+      const parts = locationHeader.split(', ');
+      const countryPart = parts.find(part => part.startsWith('country='));
+      if (countryPart) {
+        country = countryPart.split('=')[1];
+      }
+    }
 
     // Insertar el registro de la visita
     const { error } = await supabaseAdmin.from('visit_logs').insert({
