@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor } from "lucide-react";
+import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor, AlertTriangle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 
 const Index = () => {
   const { session, loading } = useAuth();
@@ -148,6 +149,43 @@ const Index = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        <div className="text-center mt-16 px-4">
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Términos y Condiciones
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle className="text-2xl">Términos y Condiciones de la Comunidad</DialogTitle>
+              </DialogHeader>
+              <div className="py-4 space-y-4 text-left">
+                <p className="text-base text-gray-700">
+                  En Freelancer Hunter, valoramos un ambiente de <strong>respeto y profesionalismo</strong>. Es fundamental que toda comunicación entre clientes y proveedores se mantenga cordial, constructiva y libre de cualquier tipo de hostilidad.
+                </p>
+                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="font-semibold text-yellow-800">
+                    Cualquier forma de acoso, lenguaje ofensivo, discriminación o comunicación irrespetuosa no será tolerada.
+                  </p>
+                </div>
+                <p className="text-base text-gray-700">
+                  El administrador de la plataforma se reserva el derecho de monitorear las interacciones y tiene la <strong>plena potestad de suspender, eliminar y/o banear permanentemente</strong> las cuentas de los usuarios (tanto clientes como proveedores) que incumplan con esta norma fundamental, sin previo aviso ni derecho a reembolso.
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Al utilizar nuestros servicios, aceptas adherirte a estas condiciones para garantizar una comunidad segura y constructiva para todos.
+                </p>
+              </div>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button type="button">Cerrar</Button>
+                </DialogClose>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
