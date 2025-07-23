@@ -31,7 +31,7 @@ serve(async (req) => {
       const parts = locationHeader.split(', ');
       const countryPart = parts.find(part => part.startsWith('country='));
       if (countryPart) {
-        country = countryPart.split('=')[1];
+        country = countryPart.split('=')[1].trim(); // Limpiar espacios en blanco
       }
     }
 
