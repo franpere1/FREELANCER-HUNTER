@@ -14,7 +14,7 @@ const MessageStatus: React.FC<MessageStatusProps> = ({ isSender, isRead }) => {
   return (
     <div className="flex items-center justify-end h-4">
       {isRead ? (
-        <CheckCheck className="h-4 w-4 text-blue-400" />
+        <CheckCheck className="h-4 w-4 text-yellow-400" />
       ) : (
         <Check className={cn("h-4 w-4", "text-gray-400")} />
       )}
