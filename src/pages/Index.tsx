@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const Index = () => {
   const { session, loading } = useAuth();
@@ -181,26 +182,85 @@ const Index = () => {
                 Términos y Condiciones
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[650px]">
               <DialogHeader>
-                <DialogTitle className="text-2xl">Términos y Condiciones de la Comunidad</DialogTitle>
+                <DialogTitle className="text-2xl">Términos y Condiciones</DialogTitle>
               </DialogHeader>
-              <div className="py-4 space-y-4 text-left">
-                <p className="text-base text-gray-700">
-                  En Freelancer Hunter, valoramos un ambiente de <strong>respeto y profesionalismo</strong>. Es fundamental que toda comunicación entre clientes y proveedores se mantenga cordial, constructiva y libre de cualquier tipo de hostilidad.
-                </p>
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                  <p className="font-semibold text-yellow-800">
-                    Cualquier forma de acoso, lenguaje ofensivo, discriminación o comunicación irrespetuosa no será tolerada.
+              <ScrollArea className="h-[60vh] pr-6">
+                <div className="space-y-4 text-left">
+                  <h3 className="text-xl font-semibold">Normas de la Comunidad</h3>
+                  <p className="text-base text-gray-700">
+                    En Freelancer Hunter, valoramos un ambiente de <strong>respeto y profesionalismo</strong>. Es fundamental que toda comunicación entre clientes y proveedores se mantenga cordial, constructiva y libre de cualquier tipo de hostilidad.
                   </p>
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="font-semibold text-yellow-800">
+                      Cualquier forma de acoso, lenguaje ofensivo, discriminación o comunicación irrespetuosa no será tolerada.
+                    </p>
+                  </div>
+                  <p className="text-base text-gray-700">
+                    El administrador de la plataforma se reserva el derecho de monitorear las interacciones y tiene la <strong>plena potestad de suspender, eliminar y/o banear permanentemente</strong> las cuentas de los usuarios (tanto clientes como proveedores) que incumplan con esta norma fundamental, sin previo aviso ni derecho a reembolso.
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Al utilizar nuestros servicios, aceptas adherirte a estas condiciones para garantizar una comunidad segura y constructiva para todos.
+                  </p>
+
+                  <hr className="my-6" />
+
+                  <h3 className="text-xl font-semibold">Términos de Uso de Tokens</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Estos Términos y Condiciones regulan el uso de los tokens internos (en adelante, “Tokens”) dentro de la plataforma Freelancer Hunter, en adelante “la Plataforma”.
+                  </p>
+                  
+                  <ol className="list-decimal list-inside space-y-3 text-sm text-gray-600">
+                    <li>
+                      <strong>Naturaleza de los Tokens</strong>
+                      <ul className="list-disc list-inside pl-4 mt-1 space-y-1">
+                        <li>Los Tokens son unidades digitales internas que permiten a los usuarios acceder a funciones específicas dentro de la Plataforma, como desbloquear información de contacto de proveedores o destacar perfiles.</li>
+                        <li>Los Tokens no son dinero, moneda digital, criptoactivo, valor financiero, ni representan propiedad o inversión.</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Compra de Tokens</strong>
+                      <ul className="list-disc list-inside pl-4 mt-1 space-y-1">
+                        <li>Los Tokens pueden ser adquiridos mediante los métodos de pago ofrecidos por la Plataforma.</li>
+                        <li>Todas las compras son definitivas y no reembolsables, salvo que la ley aplicable disponga lo contrario.</li>
+                        <li>El precio de los Tokens está determinado por la Plataforma y puede ser ajustado sin previo aviso.</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Uso de los Tokens</strong>
+                      <ul className="list-disc list-inside pl-4 mt-1 space-y-1">
+                        <li>Los Tokens solo pueden ser utilizados dentro de la Plataforma.</li>
+                        <li>No pueden ser transferidos, intercambiados, vendidos, ni canjeados por dinero, productos o servicios fuera de la Plataforma.</li>
+                        <li>La Plataforma se reserva el derecho de modificar las funcionalidades asociadas a los Tokens en cualquier momento.</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Propiedad y derechos</strong>
+                      <ul className="list-disc list-inside pl-4 mt-1 space-y-1">
+                        <li>Los usuarios reconocen que los Tokens son propiedad exclusiva de la Plataforma.</li>
+                        <li>El uso de los Tokens está sujeto a las condiciones establecidas en estos Términos y no otorga ningún derecho sobre activos, participación, dividendos o decisiones administrativas.</li>
+                      </ul>
+                    </li>
+                    <li>
+                      <strong>Suspensión o cancelación</strong>
+                      <p className="pl-4 mt-1">El uso indebido de los Tokens, o cualquier violación a los Términos de la Plataforma, podrá resultar en la cancelación de la cuenta del usuario y/o la pérdida de los Tokens adquiridos sin derecho a reembolso.</p>
+                    </li>
+                    <li>
+                      <strong>Limitación de responsabilidad</strong>
+                      <p className="pl-4 mt-1">La Plataforma no será responsable por fallos técnicos, interrupciones, pérdidas de datos o accesos no autorizados que afecten el saldo o uso de los Tokens, salvo dolo o negligencia grave comprobada.</p>
+                    </li>
+                    <li>
+                      <strong>Modificaciones</strong>
+                      <p className="pl-4 mt-1">La Plataforma podrá actualizar estos Términos en cualquier momento. Las modificaciones serán publicadas y se considerarán aceptadas si el usuario continúa utilizando los servicios.</p>
+                    </li>
+                    <li>
+                      <strong>Legislación aplicable</strong>
+                      <p className="pl-4 mt-1">Estos Términos se rigen por las leyes del país o jurisdicción donde la Plataforma tenga su sede operativa, sin perjuicio de la legislación local del usuario.</p>
+                    </li>
+                  </ol>
                 </div>
-                <p className="text-base text-gray-700">
-                  El administrador de la plataforma se reserva el derecho de monitorear las interacciones y tiene la <strong>plena potestad de suspender, eliminar y/o banear permanentemente</strong> las cuentas de los usuarios (tanto clientes como proveedores) que incumplan con esta norma fundamental, sin previo aviso ni derecho a reembolso.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Al utilizar nuestros servicios, aceptas adherirte a estas condiciones para garantizar una comunidad segura y constructiva para todos.
-                </p>
-              </div>
+              </ScrollArea>
               <DialogFooter>
                 <DialogClose asChild>
                   <Button type="button">Cerrar</Button>
