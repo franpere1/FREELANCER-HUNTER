@@ -55,25 +55,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    const initializeSession = async () => {
-      // 1. Get the initial session from Supabase
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      // 2. If a user exists, fetch their profile
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
-
-      // 3. Set loading to false only after all initial data is fetched
-      setLoading(false);
-    };
-
-    // Run the initialization
-    initializeSession();
-
-    // 4. Set up a listener for subsequent auth changes (login, logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       const currentUser = session?.user ?? null;
@@ -84,9 +65,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setProfile(null);
       }
+      
+      setLoading(false);
     });
 
-    // Cleanup the listener on component unmount
     return () => {
       subscription.unsubscribe();
     };
@@ -94,9 +76,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = useCallback(async () => {
     await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setProfile(null);
   }, []);
 
   const refreshProfile = useCallback(async () => {
