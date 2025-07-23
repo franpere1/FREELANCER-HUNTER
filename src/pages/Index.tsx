@@ -44,7 +44,7 @@ const Index = () => {
           Encuentra al Profesional Perfecto
         </h1>
         <p className="text-xl text-gray-600 mt-4 max-w-2xl mx-auto">
-          La plataforma que conecta clientes con los mejores profesionales y técnicos de Venezuela.
+          La plataforma que conecta clientes con los mejores profesionales y técnicos de Latinoamerica.
         </p>
       </div>
 
