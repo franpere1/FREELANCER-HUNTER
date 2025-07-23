@@ -54,15 +54,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, []);
 
-  const logout = useCallback(async () => {
-    await supabase.auth.signOut();
-    setSession(null);
-    setUser(null);
-    setProfile(null);
-  }, []);
-
   useEffect(() => {
-    const setAuthData = async (session: Session | null) => {
+    // Set loading to true initially
+    setLoading(true);
+
+    // Use onAuthStateChange as the single source of truth for the session.
+    // It fires immediately with the initial session state.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -72,25 +70,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setProfile(null);
       }
-    };
-
-    const initializeAuth = async () => {
-      setLoading(true);
-      const { data: { session } } = await supabase.auth.getSession();
-      await setAuthData(session);
+      
+      // Set loading to false after the initial check is complete.
       setLoading(false);
-    };
-
-    initializeAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      await setAuthData(session);
     });
 
     return () => {
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
+
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+  }, []);
 
   const refreshProfile = useCallback(async () => {
     if (user) {
