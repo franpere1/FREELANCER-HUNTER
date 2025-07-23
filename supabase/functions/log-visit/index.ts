@@ -24,6 +24,8 @@ serve(async (req) => {
     
     // Supabase Edge Functions provee la geolocalización en esta cabecera
     const locationHeader = req.headers.get('x-supabase-edge-location');
+    console.log('Location Header Received:', locationHeader); // <-- Registro de diagnóstico
+    
     let country: string | null = null;
 
     if (locationHeader) {
