@@ -118,10 +118,11 @@ const AdminDashboard = () => {
         setVisitCount(count || 0);
       }
 
-      // Fetch last 10 visits
+      // Fetch last 10 visits from registered users
       const { data: visitsData, error: visitsError } = await supabase
         .from('visit_logs')
         .select('id, created_at, country, user_id')
+        .not('user_id', 'is', null)
         .order('created_at', { ascending: false })
         .limit(10);
 
@@ -182,10 +183,10 @@ const AdminDashboard = () => {
       return (
         c.name.toLowerCase().includes(lowercasedFilter) ||
         c.email.toLowerCase().includes(lowercasedFilter) ||
-        (c.phone && c.phone.toLowerCase().includes(lowercasedFilter)) ||
-        (c.country && c.country.toLowerCase().includes(lowercasedFilter)) ||
-        (c.state && c.state.toLowerCase().includes(lowercasedFilter)) ||
-        (c.city && c.city.toLowerCase().includes(lowercasedFilter))
+        (p.phone && p.phone.toLowerCase().includes(lowercasedFilter)) ||
+        (p.country && p.country.toLowerCase().includes(lowercasedFilter)) ||
+        (p.state && p.state.toLowerCase().includes(lowercasedFilter)) ||
+        (p.city && p.city.toLowerCase().includes(lowercasedFilter))
       );
     });
     setFilteredClients(filteredC);
@@ -278,7 +279,7 @@ const AdminDashboard = () => {
               )}
             </div>
             <div>
-              <h3 className="text-lg font-semibold mb-2 text-gray-700">Últimas 10 Visitas</h3>
+              <h3 className="text-lg font-semibold mb-2 text-gray-700">Últimas Visitas de Usuarios Registrados</h3>
               {visitsLoading ? (
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => <div key={i} className="h-6 bg-gray-200 rounded animate-pulse" />)}
