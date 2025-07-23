@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { showError } from '@/utils/toast';
 import { useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 const loginSchema = z.object({
   email: z.string().email({ message: 'Correo electrónico inválido' }),
@@ -29,15 +30,34 @@ const AdminLogin = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = ({ email, password }: LoginFormData) => {
-    // Paso de depuración: Imprimir las credenciales en la consola del navegador
-    console.log("Intento de inicio de sesión de administrador con:", { email: email.trim(), password });
-
-    if (email.trim() === 'admin@admin.com' && password === 'kilimanjaro') {
-      sessionStorage.setItem('isAdmin', 'true');
-      navigate('/admin/dashboard');
-    } else {
+  const onSubmit = async ({ email, password }: LoginFormData) => {
+    if (email.trim() !== 'admin@admin.com') {
       showError('Credenciales de administrador inválidas.');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('settings')
+        .select('admin_password')
+        .limit(1)
+        .single();
+
+      if (error || !data) {
+        console.error('Error fetching admin password:', error);
+        showError('No se pudo verificar la contraseña. Contacte al soporte.');
+        return;
+      }
+
+      if (password === data.admin_password) {
+        sessionStorage.setItem('isAdmin', 'true');
+        navigate('/admin/dashboard');
+      } else {
+        showError('Credenciales de administrador inválidas.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      showError('Ocurrió un error inesperado.');
     }
   };
 

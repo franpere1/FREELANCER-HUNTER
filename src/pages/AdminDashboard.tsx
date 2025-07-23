@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { LogOut } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
 
 interface Profile {
   id: string;
@@ -25,6 +28,8 @@ const AdminDashboard = () => {
   const [providers, setProviders] = useState<Profile[]>([]);
   const [clients, setClients] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
+  const [newPassword, setNewPassword] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     const fetchProfiles = async () => {
@@ -50,6 +55,48 @@ const AdminDashboard = () => {
     navigate('/admin/login');
   };
 
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPassword.length < 6) {
+      showError('La nueva contraseña debe tener al menos 6 caracteres.');
+      return;
+    }
+
+    setIsSaving(true);
+    const toastId = showLoading('Guardando nueva contraseña...');
+
+    try {
+      const { data: settings, error: fetchError } = await supabase
+        .from('settings')
+        .select('id')
+        .limit(1)
+        .single();
+
+      if (fetchError || !settings) {
+        throw new Error('No se pudo encontrar la configuración para actualizar.');
+      }
+
+      const { error: updateError } = await supabase
+        .from('settings')
+        .update({ admin_password: newPassword })
+        .eq('id', settings.id);
+
+      if (updateError) {
+        throw updateError;
+      }
+
+      dismissToast(toastId);
+      showSuccess('¡Contraseña actualizada con éxito!');
+      setNewPassword('');
+    } catch (error: any) {
+      dismissToast(toastId);
+      console.error('Error updating password:', error);
+      showError(error.message || 'No se pudo actualizar la contraseña.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
@@ -62,6 +109,29 @@ const AdminDashboard = () => {
         </div>
       </header>
       <main className="container mx-auto p-4 md:p-8">
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle>Cambiar Contraseña de Administrador</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <div>
+                <Label htmlFor="newPassword">Nueva Contraseña</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Introduce la nueva contraseña (mín. 6 caracteres)"
+                />
+              </div>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? 'Guardando...' : 'Guardar Contraseña'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+
         {loading ? (
           <p>Cargando datos...</p>
         ) : (
