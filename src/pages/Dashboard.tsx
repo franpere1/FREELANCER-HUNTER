@@ -171,12 +171,18 @@ const Dashboard = () => {
   }, [profile]);
 
   const fetchLatestProvidersForClient = useCallback(async () => {
+    if (!profile || !profile.country) {
+      setProvidersLoading(false);
+      setLatestProviders([]);
+      return;
+    }
     setProvidersLoading(true);
     try {
       const { data: providersData, error: providersError } = await supabase
           .from('profiles')
           .select('id, name, skill, rate, profile_image, star_rating')
           .eq('type', 'provider')
+          .eq('country', profile.country)
           .order('created_at', { ascending: false })
           .limit(10);
       if (providersError) throw providersError;
@@ -187,7 +193,7 @@ const Dashboard = () => {
     } finally {
       setProvidersLoading(false);
     }
-  }, []);
+  }, [profile]);
 
   const clearSearch = useCallback(() => {
     setSearchTerm('');
@@ -203,6 +209,11 @@ const Dashboard = () => {
       return;
     }
 
+    if (!profile || !profile.country) {
+      showError("Por favor, establece tu país en tu perfil para poder buscar.");
+      return;
+    }
+
     setIsSearching(true);
     setProvidersLoading(true);
     try {
@@ -210,6 +221,7 @@ const Dashboard = () => {
         .from('profiles')
         .select('id, name, skill, rate, profile_image, star_rating')
         .eq('type', 'provider')
+        .eq('country', profile.country)
         .or(`name.ilike.%${trimmedSearch}%,skill.ilike.%${trimmedSearch}%,service_description.ilike.%${trimmedSearch}%`)
         .limit(20);
 
@@ -455,14 +467,20 @@ const Dashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>
-                    {isSearching ? `Resultados para "${searchTerm}"` : 'Últimos Proveedores Registrados'}
+                    {isSearching ? `Resultados para "${searchTerm}"` : `Últimos Proveedores en ${profile.country || 'tu país'}`}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <LatestProviders 
-                    providers={latestProviders} 
-                    isLoading={providersLoading}
-                  />
+                  {profile.country ? (
+                    <LatestProviders 
+                      providers={latestProviders} 
+                      isLoading={providersLoading}
+                    />
+                  ) : (
+                    <p className="text-muted-foreground text-center py-8">
+                      Por favor, <Link to="/edit-profile" className="font-medium text-indigo-600 hover:underline">completa tu perfil</Link> para ver proveedores en tu país.
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </div>

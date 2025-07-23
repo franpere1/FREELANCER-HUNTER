@@ -49,7 +49,7 @@ const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading 
   if (providers.length === 0) {
     return (
         <p className="text-muted-foreground text-center py-8">
-            No hay proveedores registrados aún.
+            No se encontraron proveedores.
         </p>
     );
   }
