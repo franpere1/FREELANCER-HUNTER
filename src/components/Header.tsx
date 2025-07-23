@@ -18,7 +18,9 @@ const Header = () => {
     } catch (error) {
       showError('Error al cerrar sesión. Por favor, inténtalo de nuevo.');
       console.error('Error logging out:', error);
-      setIsLoggingOut(false); // Solo resetear en caso de error
+    } finally {
+      // Asegurarse de que el estado de carga se reinicie siempre
+      setIsLoggingOut(false);
     }
   };
 
