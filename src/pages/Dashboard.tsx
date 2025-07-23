@@ -32,7 +32,6 @@ const Dashboard = () => {
   const [lastRequestsLoading, setLastRequestsLoading] = useState(true);
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [isSearching, setIsSearching] = useState(false);
 
   const fetchClientData = useCallback(async () => {
     if (!profile || !user) return;
@@ -180,7 +179,7 @@ const Dashboard = () => {
     try {
       const { data: providersData, error: providersError } = await supabase
           .from('profiles')
-          .select('id, name, skill, rate, profile_image, star_rating')
+          .select('id, name, skill, rate, profile_image, star_rating, country, state, city')
           .eq('type', 'provider')
           .eq('country', profile.country)
           .order('created_at', { ascending: false })
@@ -195,66 +194,50 @@ const Dashboard = () => {
     }
   }, [profile]);
 
-  const clearSearch = useCallback(() => {
-    setSearchTerm('');
-    setIsSearching(false);
-    fetchLatestProvidersForClient();
-  }, [fetchLatestProvidersForClient]);
-
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const trimmedSearch = searchTerm.trim();
-    if (!trimmedSearch) {
-      clearSearch();
-      return;
-    }
-
-    if (!profile || !profile.country) {
-      showError("Por favor, establece tu país en tu perfil para poder buscar.");
-      return;
-    }
-
-    setIsSearching(true);
-    setProvidersLoading(true);
-    try {
-      const { data: providersData, error: providersError } = await supabase
-        .from('profiles')
-        .select('id, name, skill, rate, profile_image, star_rating')
-        .eq('type', 'provider')
-        .eq('country', profile.country)
-        .or(`name.ilike.%${trimmedSearch}%,skill.ilike.%${trimmedSearch}%,service_description.ilike.%${trimmedSearch}%`)
-        .limit(20);
-
-      if (providersError) throw providersError;
-      setLatestProviders(providersData || []);
-    } catch (error) {
-      console.error("Error searching providers:", error);
-      showError('Ocurrió un error al buscar proveedores.');
-      setLatestProviders([]);
-    } finally {
-      setProvidersLoading(false);
-    }
-  };
-
   useEffect(() => {
-    if (loading || !profile) {
-      return;
-    }
+    if (loading || !profile) return;
 
     if (profile.type === 'client') {
       fetchClientData();
-      fetchLatestProvidersForClient();
+      // Initial fetch is handled by the search useEffect
     } else if (profile.type === 'provider') {
       fetchProviderData();
       fetchLastRequests();
-    } else {
-      // Handle cases with no or unknown profile type
-      setActiveContactsLoading(false);
-      setProvidersLoading(false);
-      setClientsLoading(false);
-      setLastRequestsLoading(false);
     }
-  }, [loading, profile, refetchTrigger, fetchClientData, fetchProviderData, fetchLatestProvidersForClient, fetchLastRequests]);
+  }, [loading, profile, refetchTrigger, fetchClientData, fetchProviderData, fetchLastRequests]);
+
+  useEffect(() => {
+    if (profile?.type !== 'client') return;
+
+    const trimmedSearch = searchTerm.trim();
+
+    const debounceTimer = setTimeout(async () => {
+      setProvidersLoading(true);
+      try {
+        if (trimmedSearch) {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('id, name, skill, rate, profile_image, star_rating, country, state, city')
+            .eq('type', 'provider')
+            .or(`name.ilike.%${trimmedSearch}%,skill.ilike.%${trimmedSearch}%,service_description.ilike.%${trimmedSearch}%,country.ilike.%${trimmedSearch}%,state.ilike.%${trimmedSearch}%,city.ilike.%${trimmedSearch}%`)
+            .limit(20);
+          if (error) throw error;
+          setLatestProviders(data || []);
+        } else {
+          fetchLatestProvidersForClient();
+        }
+      } catch (error) {
+        console.error("Error during search:", error);
+        showError('Ocurrió un error al buscar.');
+        setLatestProviders([]);
+      } finally {
+        setProvidersLoading(false);
+      }
+    }, 500); // 500ms debounce delay
+
+    return () => clearTimeout(debounceTimer);
+  }, [searchTerm, profile, fetchLatestProvidersForClient]);
+
 
   if (loading) {
     return <DashboardSkeleton />;
@@ -286,6 +269,8 @@ const Dashboard = () => {
     setSelectedProviderForFeedback(null);
     setRefetchTrigger(t => t + 1);
   };
+
+  const isSearching = searchTerm.trim() !== '';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -441,24 +426,21 @@ const Dashboard = () => {
               <Card>
                 <CardHeader>
                   <CardTitle>Buscar Proveedores</CardTitle>
-                  <CardDescription>Encuentra profesionales por nombre, oficio o palabras clave.</CardDescription>
+                  <CardDescription>Encuentra profesionales por nombre, oficio, ciudad, estado o país.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-2">
+                  <div className="flex flex-col sm:flex-row items-center gap-2">
                     <Input
                       type="text"
-                      placeholder="Ej: Plomero, electricista, diseño web..."
+                      placeholder="Ej: Plomero, Caracas, Lara, Venezuela..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="flex-grow"
                     />
-                    <div className="flex gap-2 w-full sm:w-auto">
-                      <Button type="submit" className="w-full">Buscar</Button>
-                      {isSearching && (
-                        <Button type="button" variant="outline" onClick={clearSearch} className="w-full">Limpiar</Button>
-                      )}
-                    </div>
-                  </form>
+                    {isSearching && (
+                      <Button type="button" variant="outline" onClick={() => setSearchTerm('')}>Limpiar</Button>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -471,10 +453,11 @@ const Dashboard = () => {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {profile.country ? (
+                  {profile.country || isSearching ? (
                     <LatestProviders 
                       providers={latestProviders} 
                       isLoading={providersLoading}
+                      isSearching={isSearching}
                     />
                   ) : (
                     <p className="text-muted-foreground text-center py-8">

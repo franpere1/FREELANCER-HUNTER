@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star } from 'lucide-react';
+import { Star, MapPin } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNavigate } from 'react-router-dom';
 
@@ -12,11 +12,15 @@ interface ProviderSummary {
   rate: number | null;
   profile_image: string | null;
   star_rating: number | null;
+  country?: string | null;
+  state?: string | null;
+  city?: string | null;
 }
 
 interface LatestProvidersProps {
   providers: ProviderSummary[];
   isLoading: boolean;
+  isSearching: boolean;
 }
 
 const getInitials = (name: string) => {
@@ -24,7 +28,7 @@ const getInitials = (name: string) => {
   return name.split(' ').map((n) => n[0]).join('');
 };
 
-const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading }) => {
+const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading, isSearching }) => {
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -49,7 +53,7 @@ const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading 
   if (providers.length === 0) {
     return (
         <p className="text-muted-foreground text-center py-8">
-            No se encontraron proveedores.
+            No se encontraron proveedores que coincidan con tu búsqueda.
         </p>
     );
   }
@@ -67,6 +71,12 @@ const LatestProviders: React.FC<LatestProvidersProps> = ({ providers, isLoading 
               <div>
                 <p className="font-semibold text-lg">{provider.name}</p>
                 <p className="text-sm text-muted-foreground">{provider.skill || 'Sin oficio'}</p>
+                {isSearching && (
+                  <div className="flex items-center text-xs text-gray-500 mt-1">
+                    <MapPin className="h-3 w-3 mr-1" />
+                    {[provider.city, provider.state, provider.country].filter(Boolean).join(', ')}
+                  </div>
+                )}
                 <div className="flex items-center mt-1">
                   {[...Array(5)].map((_, i) => (
                     <Star
