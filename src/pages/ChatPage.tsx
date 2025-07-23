@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
@@ -11,15 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { ArrowLeft, Send, ShieldAlert, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { showError } from '@/utils/toast';
-
-interface Message {
-  id: string;
-  sender_id: string;
-  receiver_id: string;
-  text: string;
-  timestamp: string;
-  read_by: string[] | null;
-}
+import { useChat } from '@/hooks/useChat';
+import MessageStatus from '@/components/MessageStatus';
 
 interface OtherUser {
   id: string;
@@ -31,153 +24,55 @@ const getInitials = (name: string) => name ? name.split(' ').map((n) => n[0]).jo
 
 const ChatPage = () => {
   const { otherUserId } = useParams<{ otherUserId: string }>();
-  const { user, profile, loading: authLoading, refreshProfile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const preloadedOtherUser = location.state?.otherUser;
 
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [newMessage, setNewMessage] = useState('');
   const [otherUser, setOtherUser] = useState<OtherUser | null>(preloadedOtherUser ? {
     id: preloadedOtherUser.id,
     name: preloadedOtherUser.name,
     profile_image: preloadedOtherUser.profile_image || null,
   } : null);
   
-  const [isVerifying, setIsVerifying] = useState(true);
-  const [messagesLoading, setMessagesLoading] = useState(true);
   const [isConnectionActive, setIsConnectionActive] = useState(false);
-  const [isOtherUserTyping, setIsOtherUserTyping] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isVerifying, setIsVerifying] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const handleConnectionVerified = useCallback((isVerified: boolean) => {
+    setIsConnectionActive(isVerified);
+    setIsVerifying(false);
+    if (!isVerified) {
+      showError("No tienes permiso para chatear con este usuario.");
+      navigate('/dashboard');
+    }
+  }, [navigate]);
+
+  const { messages, newMessage, isLoading: messagesLoading, isOtherUserTyping, handleTyping, handleSendMessage } = useChat({
+    user,
+    otherUserId: otherUserId!,
+    onConnectionVerified: handleConnectionVerified,
+  });
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight });
+      scrollAreaRef.current.scrollTo({ top: scrollAreaRef.current.scrollHeight, behavior: 'smooth' });
     }
   }, [messages]);
 
   useEffect(() => {
-    if (authLoading || !user || !otherUserId) return;
-
-    const initializeChat = async () => {
-      setIsVerifying(true);
-      setMessagesLoading(true);
-
-      const { data: connection, error: connectionError } = await supabase
-        .from('unlocked_contacts')
-        .select('id')
-        .or(`and(client_id.eq.${user.id},provider_id.eq.${otherUserId}),and(client_id.eq.${otherUserId},provider_id.eq.${user.id})`)
-        .eq('feedback_submitted_for_this_unlock', false)
-        .limit(1)
-        .single();
-
-      if (connectionError || !connection) {
-        showError("No tienes permiso para chatear con este usuario. El contacto debe ser desbloqueado primero.");
-        navigate('/dashboard');
-        setIsVerifying(false);
-        return;
-      }
-      
-      setIsConnectionActive(true);
-      setIsVerifying(false);
-
-      const [otherUserResult, messagesResult] = await Promise.all([
-        supabase.from('profiles').select('id, name, profile_image').eq('id', otherUserId).single(),
-        supabase.from('messages').select('*').or(`and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`).order('timestamp', { ascending: true })
-      ]);
-
-      const { data: otherUserData, error: otherUserError } = otherUserResult;
-      if (otherUserError && !preloadedOtherUser) {
-        showError("No se pudo cargar la información del otro usuario.");
-        navigate(-1);
-      } else if (otherUserData) {
-        setOtherUser(otherUserData);
-      }
-
-      const { data: messagesData, error: messagesError } = messagesResult;
-      if (messagesError) {
-        console.error("Error fetching messages:", messagesError);
-      } else {
-        setMessages(messagesData as Message[]);
-        const unreadMessageIds = messagesData
-          .filter(msg => msg.receiver_id === user.id && !msg.read_by?.includes(user.id))
-          .map(msg => msg.id);
-
-        if (unreadMessageIds.length > 0) {
-          supabase.rpc('mark_messages_as_read', { message_ids: unreadMessageIds, user_id: user.id })
-            .then(({ error }) => {
-              if (error) console.error("Error marking messages as read:", error);
-              else refreshProfile();
-            });
-        }
-      }
-      setMessagesLoading(false);
-    };
-
-    initializeChat();
-
-    const channel = supabase
-      .channel(`chat:${user?.id}:${otherUserId}`, {
-        config: { broadcast: { self: false } }
-      })
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `receiver_id=eq.${user?.id}` },
-        (payload) => {
-          if (payload.new.sender_id === otherUserId) {
-            setMessages((prevMessages) => [...prevMessages, payload.new as Message]);
-            supabase.rpc('mark_messages_as_read', { message_ids: [payload.new.id], user_id: user.id })
-              .then(({ error }) => { if (error) console.error("Error marking new message as read:", error); });
+    if (!preloadedOtherUser && otherUserId) {
+      supabase.from('profiles').select('id, name, profile_image').eq('id', otherUserId).single()
+        .then(({ data, error }) => {
+          if (error) {
+            showError("No se pudo cargar la información del otro usuario.");
+            navigate(-1);
+          } else {
+            setOtherUser(data);
           }
-        }
-      )
-      .on('broadcast', { event: 'typing' }, ({ payload }) => {
-        setIsOtherUserTyping(payload.isTyping);
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user, otherUserId, authLoading, navigate, refreshProfile]);
-
-  const handleTyping = (text: string) => {
-    setNewMessage(text);
-    const channel = supabase.channel(`chat:${user?.id}:${otherUserId}`);
-    if (!channel) return;
-
-    if (text) {
-      channel.track({ event: 'typing', payload: { isTyping: true } });
+        });
     }
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-
-    typingTimeoutRef.current = setTimeout(() => {
-      channel.track({ event: 'typing', payload: { isTyping: false } });
-    }, 2000);
-  };
-
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !user || !otherUserId) return;
-
-    const messageToSend = { sender_id: user.id, receiver_id: otherUserId, text: newMessage.trim() };
-    const optimisticMessage: Message = { ...messageToSend, id: crypto.randomUUID(), timestamp: new Date().toISOString(), read_by: [user.id] };
-    setMessages(prev => [...prev, optimisticMessage]);
-    setNewMessage('');
-
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    const channel = supabase.channel(`chat:${user?.id}:${otherUserId}`);
-    channel?.track({ event: 'typing', payload: { isTyping: false } });
-
-    const { error } = await supabase.from('messages').insert(messageToSend);
-    if (error) {
-      console.error("Error sending message:", error);
-      showError("Error al enviar el mensaje.");
-      setMessages(prev => prev.filter(msg => msg.id !== optimisticMessage.id));
-    }
-  };
+  }, [preloadedOtherUser, otherUserId, navigate]);
 
   if (authLoading || isVerifying) {
     return <div className="flex items-center justify-center min-h-screen">Verificando conexión...</div>;
@@ -217,16 +112,23 @@ const ChatPage = () => {
                 <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin text-gray-400" /></div>
               ) : (
                 <div className="space-y-4 p-4">
-                  {messages.map((msg) => (
-                    <div key={msg.id} className={cn("flex items-end gap-2", msg.sender_id === user?.id ? "justify-end" : "justify-start")}>
-                      {msg.sender_id !== user?.id && (<Avatar className="h-8 w-8"><AvatarImage src={otherUser?.profile_image || undefined} /><AvatarFallback>{otherUser ? getInitials(otherUser.name) : '?'}</AvatarFallback></Avatar>)}
-                      <div className={cn("max-w-xs rounded-lg px-4 py-2 text-sm md:max-w-md", msg.sender_id === user?.id ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-900")}>
-                        <p>{msg.text}</p>
-                        <p className={cn("text-xs mt-1", msg.sender_id === user?.id ? "text-blue-200" : "text-gray-500")}>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                  {messages.map((msg) => {
+                    const isSender = msg.sender_id === user?.id;
+                    const isRead = msg.read_by ? msg.read_by.length > 1 : false;
+                    return (
+                      <div key={msg.id} className={cn("flex items-end gap-2", isSender ? "justify-end" : "justify-start")}>
+                        {!isSender && (<Avatar className="h-8 w-8 self-end"><AvatarImage src={otherUser?.profile_image || undefined} /><AvatarFallback>{otherUser ? getInitials(otherUser.name) : '?'}</AvatarFallback></Avatar>)}
+                        <div className={cn("max-w-xs rounded-lg px-3 py-2 text-sm md:max-w-md flex flex-col", isSender ? "bg-blue-600 text-white" : "bg-gray-200 text-gray-900")}>
+                          <p className="break-words">{msg.text}</p>
+                          <div className="flex items-center gap-2 self-end mt-1">
+                            <p className={cn("text-xs", isSender ? "text-blue-200" : "text-gray-500")}>{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                            <MessageStatus isSender={isSender} isRead={isRead} />
+                          </div>
+                        </div>
+                        {isSender && (<Avatar className="h-8 w-8 self-end"><AvatarImage src={profile?.profile_image || undefined} /><AvatarFallback>{profile ? getInitials(profile.name) : 'U'}</AvatarFallback></Avatar>)}
                       </div>
-                      {msg.sender_id === user?.id && (<Avatar className="h-8 w-8"><AvatarImage src={profile?.profile_image || undefined} /><AvatarFallback>{profile ? getInitials(profile.name) : 'U'}</AvatarFallback></Avatar>)}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </ScrollArea>
