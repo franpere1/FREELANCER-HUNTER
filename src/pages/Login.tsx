@@ -20,19 +20,19 @@ type LoginFormData = z.infer<typeof loginSchema>;
 
 const Login = () => {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, isPasswordRecovery } = useAuth();
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   });
 
   useEffect(() => {
-    if (session) {
+    if (session && !isPasswordRecovery) {
       navigate('/dashboard');
     }
-  }, [session, navigate]);
+  }, [session, isPasswordRecovery, navigate]);
 
-  const onSubmit = async ({ email, password }: LoginFormData) => { // Desestructuración para asegurar tipos no opcionales
+  const onSubmit = async ({ email, password }: LoginFormData) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       showError('Credenciales inválidas. Por favor, inténtalo de nuevo.');
@@ -60,6 +60,11 @@ const Login = () => {
               <Label htmlFor="password">Contraseña</Label>
               <Input id="password" type="password" {...register('password')} />
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+            </div>
+            <div className="flex justify-end text-sm">
+              <Link to="/forgot-password" className="font-medium text-indigo-600 hover:text-indigo-500">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
             <Button type="submit" className="w-full">Iniciar Sesión</Button>
           </form>

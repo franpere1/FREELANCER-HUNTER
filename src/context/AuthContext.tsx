@@ -1,7 +1,6 @@
 import { createContext, useState, useEffect, useContext, ReactNode, useCallback, useMemo } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { showSuccess } from '@/utils/toast';
 
 interface Profile {
   id: string;
@@ -28,6 +27,7 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  isPasswordRecovery: boolean;
   refreshProfile: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -39,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data, error } = await supabase
@@ -60,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setSession(null);
     setUser(null);
     setProfile(null);
+    setIsPasswordRecovery(false);
   }, []);
 
   useEffect(() => {
@@ -84,8 +86,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     initializeAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthData(session);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        setSession(session);
+      } else {
+        setIsPasswordRecovery(false);
+        await setAuthData(session);
+      }
     });
 
     return () => {
@@ -99,7 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [user, fetchProfile]);
 
-  const value = useMemo(() => ({ session, user, profile, loading, refreshProfile, logout }), [session, user, profile, loading, refreshProfile, logout]);
+  const value = useMemo(() => ({ session, user, profile, loading, isPasswordRecovery, refreshProfile, logout }), [session, user, profile, loading, isPasswordRecovery, refreshProfile, logout]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
