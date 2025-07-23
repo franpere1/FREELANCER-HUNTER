@@ -33,6 +33,26 @@ const Dashboard = () => {
   const [refetchTrigger, setRefetchTrigger] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
 
+  useEffect(() => {
+    const logVisit = async () => {
+      if (sessionStorage.getItem('visitLogged') || !user) {
+        return;
+      }
+      try {
+        await supabase.functions.invoke('log-visit', {
+          body: { user_id: user.id },
+        });
+        sessionStorage.setItem('visitLogged', 'true');
+      } catch (error) {
+        console.error("Error logging visit:", error);
+      }
+    };
+
+    if (!loading && user) {
+      logVisit();
+    }
+  }, [loading, user]);
+
   const fetchClientData = useCallback(async () => {
     if (!profile || !user) return;
     setActiveContactsLoading(true);

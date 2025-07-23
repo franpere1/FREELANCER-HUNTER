@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { LogOut, Trash2 } from 'lucide-react';
+import { LogOut, Trash2, Globe, Clock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { showError, showSuccess, showLoading, dismissToast } from '@/utils/toast';
@@ -36,6 +36,14 @@ interface Profile {
   rate: number | null;
 }
 
+interface VisitLog {
+  id: number;
+  created_at: string;
+  country: string | null;
+  user_id: string | null;
+  profiles: { name: string } | null;
+}
+
 const adminPasswordSchema = z.object({
   currentPassword: z.string().min(1, { message: 'La contraseña actual es requerida.' }),
   newPassword: z.string().min(6, { message: 'La nueva contraseña debe tener al menos 6 caracteres.' }),
@@ -56,6 +64,9 @@ const AdminDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredProviders, setFilteredProviders] = useState<Profile[]>([]);
   const [filteredClients, setFilteredClients] = useState<Profile[]>([]);
+  const [visitCount, setVisitCount] = useState(0);
+  const [lastVisits, setLastVisits] = useState<VisitLog[]>([]);
+  const [visitsLoading, setVisitsLoading] = useState(true);
 
   const { 
     register: registerPassword, 
@@ -67,26 +78,60 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    const fetchProfiles = async () => {
+    const fetchAllData = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      setVisitsLoading(true);
+
+      // Fetch profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('id, name, email, phone, country, state, city, type, category, skill, rate');
 
-      if (error) {
-        console.error('Error fetching profiles:', error);
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
       } else {
-        const allProviders = data.filter(p => p.type === 'provider');
-        const allClients = data.filter(p => p.type === 'client');
+        const allProviders = profilesData.filter(p => p.type === 'provider');
+        const allClients = profilesData.filter(p => p.type === 'client');
         setProviders(allProviders);
         setClients(allClients);
         setFilteredProviders(allProviders);
         setFilteredClients(allClients);
       }
       setLoading(false);
+
+      // Fetch visit stats
+      const { count, error: countError } = await supabase
+        .from('visit_logs')
+        .select('*', { count: 'exact', head: true });
+
+      if (countError) {
+        console.error('Error fetching visit count:', countError);
+      } else {
+        setVisitCount(count || 0);
+      }
+
+      // Fetch last 10 visits and join with profiles
+      const { data: visitsData, error: visitsError } = await supabase
+        .from('visit_logs')
+        .select(`
+          id,
+          created_at,
+          country,
+          user_id,
+          profiles ( name )
+        `)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (visitsError) {
+        console.error('Error fetching last visits:', visitsError);
+      } else {
+        setLastVisits(visitsData as VisitLog[]);
+      }
+      setVisitsLoading(false);
     };
 
-    fetchProfiles();
+    fetchAllData();
   }, []);
 
   useEffect(() => {
@@ -194,6 +239,48 @@ const AdminDashboard = () => {
         </div>
       </header>
       <main className="container mx-auto p-4 md:p-8">
+        <Card className="mb-8">
+          <CardHeader><CardTitle>Estadísticas de Visitas</CardTitle></CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-2 text-gray-700">Visitas Totales</h3>
+              {visitsLoading ? (
+                <div className="h-10 w-24 bg-gray-200 rounded animate-pulse" />
+              ) : (
+                <p className="text-5xl font-bold text-indigo-600">{visitCount}</p>
+              )}
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-2 text-gray-700">Últimas 10 Visitas</h3>
+              {visitsLoading ? (
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => <div key={i} className="h-6 bg-gray-200 rounded animate-pulse" />)}
+                </div>
+              ) : (
+                <ScrollArea className="h-48">
+                  <ul className="space-y-3">
+                    {lastVisits.map(visit => (
+                      <li key={visit.id} className="flex items-center justify-between text-sm pb-2 border-b last:border-b-0">
+                        <div className="flex items-center gap-2">
+                          <Globe className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                          <span className="font-medium">
+                            {visit.profiles ? visit.profiles.name : 'Anónimo'}
+                            <span className="text-gray-600 font-normal ml-1">({visit.country || 'Desconocido'})</span>
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-500 text-xs">
+                          <Clock className="h-4 w-4" />
+                          <span>{new Date(visit.created_at).toLocaleString()}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </ScrollArea>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="mb-8">
           <CardHeader><CardTitle>Cambiar Contraseña de Administrador</CardTitle></CardHeader>
           <CardContent>

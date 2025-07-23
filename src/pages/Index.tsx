@@ -6,10 +6,32 @@ import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const logVisit = async () => {
+      // Solo registrar la visita una vez por sesión del navegador
+      if (sessionStorage.getItem('visitLogged')) {
+        return;
+      }
+      try {
+        await supabase.functions.invoke('log-visit', {
+          body: { user_id: null }, // Visita anónima
+        });
+        sessionStorage.setItem('visitLogged', 'true');
+      } catch (error) {
+        console.error("Error logging visit:", error);
+      }
+    };
+
+    if (!loading && !session) {
+      logVisit();
+    }
+  }, [loading, session]);
 
   useEffect(() => {
     if (!loading && session) {
