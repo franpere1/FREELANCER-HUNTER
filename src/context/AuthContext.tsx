@@ -55,18 +55,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    // Realiza una comprobación inicial de la sesión una sola vez.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
-      // Marca la carga como completa solo después de la comprobación inicial.
-      setLoading(false);
-    });
+    setLoading(true);
 
-    // Escucha los cambios de autenticación para el futuro.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       const currentUser = session?.user ?? null;
@@ -77,6 +67,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } else {
         setProfile(null);
       }
+      
+      setLoading(false);
     });
 
     return () => {
