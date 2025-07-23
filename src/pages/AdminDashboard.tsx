@@ -72,7 +72,7 @@ const AdminDashboard = () => {
   const countryMap = new Map(countries.map(c => [c.code, c.name]));
 
   const getCountryName = (code: string | null | undefined): string => {
-    if (!code) return 'Desconocido';
+    if (!code || code === 'Unknown') return 'Desconocido';
     return countryMap.get(code) || code;
   };
 
