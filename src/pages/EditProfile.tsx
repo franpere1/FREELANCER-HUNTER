@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { countries } from '@/lib/location-data';
 import { capitalizeWords } from '@/lib/utils';
+import ChangePasswordDialog from '@/components/ChangePasswordDialog';
 
 const editProfileSchema = z.object({
   name: z.string().min(2, { message: 'El nombre es requerido' }),
@@ -47,6 +48,7 @@ const EditProfile = () => {
   const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
   const [serviceImagePreview, setServiceImagePreview] = useState<string | null>(null);
   const [states, setStates] = useState<string[]>([]);
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
   const { register, handleSubmit, formState: { errors, isSubmitting }, setValue, watch } = useForm<EditProfileFormData>({
     resolver: zodResolver(editProfileSchema),
@@ -297,13 +299,27 @@ const EditProfile = () => {
               </div>
             )}
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="space-y-2 pt-4 border-t">
+              <Label>Seguridad de la Cuenta</Label>
+              <p className="text-sm text-muted-foreground">
+                Actualiza la contraseña de tu cuenta.
+              </p>
+              <Button type="button" variant="outline" onClick={() => setIsPasswordDialogOpen(true)}>
+                Cambiar Contraseña
+              </Button>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4 border-t">
               <Button type="button" variant="outline" onClick={() => navigate('/dashboard')}>Cancelar</Button>
               <Button type="submit" disabled={isSubmitting}>Guardar Cambios</Button>
             </div>
           </form>
         </CardContent>
       </Card>
+      <ChangePasswordDialog 
+        isOpen={isPasswordDialogOpen} 
+        onClose={() => setIsPasswordDialogOpen(false)} 
+      />
     </div>
   );
 };
