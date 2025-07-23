@@ -35,14 +35,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     const logVisit = async () => {
-      if (sessionStorage.getItem('visitLogged') || !user) {
+      // Usar una clave específica para visitas autenticadas
+      if (sessionStorage.getItem('authenticatedVisitLogged') || !user) {
         return;
       }
       try {
         await supabase.functions.invoke('log-visit', {
           body: { user_id: user.id },
         });
-        sessionStorage.setItem('visitLogged', 'true');
+        sessionStorage.setItem('authenticatedVisitLogged', 'true');
       } catch (error) {
         console.error("Error logging visit:", error);
       }

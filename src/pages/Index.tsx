@@ -15,15 +15,15 @@ const Index = () => {
 
   useEffect(() => {
     const logVisit = async () => {
-      // Solo registrar la visita una vez por sesión del navegador
-      if (sessionStorage.getItem('visitLogged')) {
+      // Usar una clave específica para visitas anónimas
+      if (sessionStorage.getItem('anonymousVisitLogged')) {
         return;
       }
       try {
         await supabase.functions.invoke('log-visit', {
           body: { user_id: null }, // Visita anónima
         });
-        sessionStorage.setItem('visitLogged', 'true');
+        sessionStorage.setItem('anonymousVisitLogged', 'true');
       } catch (error) {
         console.error("Error logging visit:", error);
       }
