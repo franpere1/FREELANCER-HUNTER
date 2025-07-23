@@ -161,6 +161,7 @@ export const useChat = ({ user, otherUserId, onConnectionVerified }: UseChatPara
       sender_id: user.id,
       receiver_id: otherUserId,
       text: newMessage.trim(),
+      read_by: [user.id], // <-- This is the fix!
     });
 
     if (error) {
