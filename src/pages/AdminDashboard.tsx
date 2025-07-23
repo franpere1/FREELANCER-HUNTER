@@ -89,7 +89,7 @@ const AdminDashboard = () => {
 
       if (profilesError) {
         console.error('Error fetching profiles:', profilesError);
-      } else {
+      } else if (profilesData) {
         const allProviders = profilesData.filter(p => p.type === 'provider');
         const allClients = profilesData.filter(p => p.type === 'client');
         setProviders(allProviders);
@@ -110,24 +110,43 @@ const AdminDashboard = () => {
         setVisitCount(count || 0);
       }
 
-      // Fetch last 10 visits and join with profiles
+      // Fetch last 10 visits
       const { data: visitsData, error: visitsError } = await supabase
         .from('visit_logs')
-        .select(`
-          id,
-          created_at,
-          country,
-          user_id,
-          profiles ( name )
-        `)
+        .select('id, created_at, country, user_id')
         .order('created_at', { ascending: false })
         .limit(10);
 
       if (visitsError) {
         console.error('Error fetching last visits:', visitsError);
-      } else {
-        setLastVisits(visitsData as VisitLog[]);
+        setLastVisits([]);
+      } else if (visitsData) {
+        const userIds = visitsData
+          .map(v => v.user_id)
+          .filter((id): id is string => id !== null && id !== undefined);
+
+        let profilesMap = new Map<string, { name: string }>();
+        if (userIds.length > 0) {
+          const { data: profilesDataForVisits, error: profilesErrorForVisits } = await supabase
+            .from('profiles')
+            .select('id, name')
+            .in('id', userIds);
+          
+          if (profilesErrorForVisits) {
+            console.error('Error fetching profiles for visits:', profilesErrorForVisits);
+          } else if (profilesDataForVisits) {
+            profilesMap = new Map(profilesDataForVisits.map(p => [p.id, { name: p.name }]));
+          }
+        }
+
+        const combinedData = visitsData.map(visit => ({
+          ...visit,
+          profiles: visit.user_id ? profilesMap.get(visit.user_id) || null : null,
+        }));
+        
+        setLastVisits(combinedData as VisitLog[]);
       }
+      
       setVisitsLoading(false);
     };
 
