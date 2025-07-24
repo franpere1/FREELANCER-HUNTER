@@ -32,6 +32,15 @@ serve(async (req) => {
         countryCode = countryPart.split('=')[1].trim().toLowerCase();
       }
     }
+
+    // --- INICIO DE LA MODIFICACIÓN PARA PRUEBAS ---
+    // Si no se detecta un código de país (común en entornos de desarrollo),
+    // forzamos uno para demostrar la funcionalidad.
+    if (!countryCode) {
+      countryCode = 've'; // Forzamos Venezuela para la prueba
+      console.log(`[News Function] No location detected. FORCING country code to: ${countryCode} for testing.`);
+    }
+    // --- FIN DE LA MODIFICACIÓN PARA PRUEBAS ---
     
     console.log(`[News Function] Determined country code: ${countryCode}`); // Log de diagnóstico
 
