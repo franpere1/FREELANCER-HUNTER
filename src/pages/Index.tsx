@@ -99,12 +99,12 @@ const Index = () => {
           </CardHeader>
           <CardContent className="text-center">
             <p className="text-lg mb-6 max-w-2xl mx-auto">
-              ¡Hemos lanzado una nueva guía para proveedores! Aprende cómo optimizar tu perfil para atraer más clientes y destacar en la plataforma.
+              Aunque en el futuro los tokens tendrán un costo, ¡todos los usuarios que se registren ahora recibirán <strong>50 tokens totalmente gratis</strong> para empezar a contactar profesionales!
             </p>
             <Button asChild size="lg" variant="secondary">
-              <a href="https://www.dyad.sh/blog" target="_blank" rel="noopener noreferrer">
-                Leer la Guía Ahora
-              </a>
+              <Link to="/signup">
+                ¡Regístrate y obtén tus tokens!
+              </Link>
             </Button>
           </CardContent>
         </Card>
