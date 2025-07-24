@@ -37,7 +37,7 @@ serve(async (req) => {
     // Si no se detecta un código de país (común en entornos de desarrollo),
     // forzamos uno para demostrar la funcionalidad.
     if (!countryCode) {
-      countryCode = 'co'; // Forzamos Colombia para la prueba
+      countryCode = 'jp'; // Forzamos Japón para la prueba
       console.log(`[News Function] No location detected. FORCING country code to: ${countryCode} for testing.`);
     }
     // --- FIN DE LA MODIFICACIÓN PARA PRUEBAS ---
