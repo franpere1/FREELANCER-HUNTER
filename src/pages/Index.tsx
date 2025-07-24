@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor, AlertTriangle, Newspaper } from "lucide-react";
+import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor, AlertTriangle, Newspaper, Megaphone } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
@@ -87,6 +87,25 @@ const Index = () => {
             <p className="text-lg text-center text-gray-700 max-w-3xl mx-auto">
               Somos un puente digital diseñado para simplificar la búsqueda y contratación de servicios. Nuestra misión es conectar de forma <strong>rápida, segura y transparente</strong> a personas que necesitan un servicio con los profesionales y técnicos más talentosos del país. Olvídate de las búsquedas interminables, aquí encuentras la ayuda que necesitas con solo unos clics.
             </p>
+          </CardContent>
+        </Card>
+
+        <Card className="mb-12 bg-gradient-to-r from-indigo-500 to-blue-500 text-white shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-3xl text-center flex items-center justify-center gap-3">
+              <Megaphone className="h-8 w-8" />
+              Anuncio Importante
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-lg mb-6 max-w-2xl mx-auto">
+              ¡Hemos lanzado una nueva guía para proveedores! Aprende cómo optimizar tu perfil para atraer más clientes y destacar en la plataforma.
+            </p>
+            <Button asChild size="lg" variant="secondary">
+              <a href="https://www.dyad.sh/blog" target="_blank" rel="noopener noreferrer">
+                Leer la Guía Ahora
+              </a>
+            </Button>
           </CardContent>
         </Card>
 
