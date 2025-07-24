@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor, AlertTriangle } from "lucide-react";
+import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor, AlertTriangle, BarChart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect } from "react";
@@ -53,6 +53,12 @@ const Index = () => {
           <span className="font-bold text-xl text-indigo-700">FREELANCER HUNTER</span>
         </Link>
         <div>
+          <Link to="/stocks" className="mr-4">
+            <Button variant="ghost">
+              <BarChart className="mr-2 h-4 w-4" />
+              Acciones
+            </Button>
+          </Link>
           <Link to="/login">
             <Button>Inicio / Registro</Button>
           </Link>

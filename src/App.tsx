@@ -16,6 +16,7 @@ import ChatPage from "./pages/ChatPage";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminProtectedRoute from "./components/AdminProtectedRoute";
+import StockPrices from "./pages/StockPrices";
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,7 @@ const App = () => (
 
             {/* User Routes */}
             <Route path="/" element={<Index />} />
+            <Route path="/stocks" element={<StockPrices />} />
             <Route path="/signup" element={<SignUp />} />
             <Route path="/login" element={<Login />} />
             
