@@ -32,6 +32,10 @@ const StockPrices = () => {
             throw new Error("La respuesta del servidor no fue la esperada.");
         }
 
+        if (data.length === 0) {
+          throw new Error("No se pudo obtener la información de la Bolsa de Valores. Es posible que el sitio de origen esté bloqueando las solicitudes o no tenga datos disponibles en este momento.");
+        }
+
         setStocks(data);
       } catch (err: any) {
         console.error("Error fetching stock prices:", err);
