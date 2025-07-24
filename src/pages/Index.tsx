@@ -1,17 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor, AlertTriangle } from "lucide-react";
+import { Briefcase, Search, Wallet, MessageSquare, Star, UserPlus, ClipboardList, Award, Monitor, AlertTriangle, Newspaper } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import NewsDialog from "@/components/NewsDialog";
 
 const Index = () => {
   const { session, loading } = useAuth();
   const navigate = useNavigate();
+  const [isNewsDialogOpen, setIsNewsDialogOpen] = useState(false);
 
   useEffect(() => {
     const logVisit = async () => {
@@ -52,7 +54,11 @@ const Index = () => {
           <Briefcase className="h-8 w-8 text-indigo-600" />
           <span className="font-bold text-xl text-indigo-700">FREELANCER HUNTER</span>
         </Link>
-        <div>
+        <div className="flex items-center space-x-2">
+          <Button variant="outline" onClick={() => setIsNewsDialogOpen(true)}>
+            <Newspaper className="mr-2 h-4 w-4" />
+            Noticias
+          </Button>
           <Link to="/login">
             <Button>Inicio / Registro</Button>
           </Link>
@@ -270,6 +276,8 @@ const Index = () => {
           </Dialog>
         </div>
       </div>
+
+      <NewsDialog isOpen={isNewsDialogOpen} onClose={() => setIsNewsDialogOpen(false)} />
 
       <div className="absolute bottom-0 w-full">
         <MadeWithDyad />
