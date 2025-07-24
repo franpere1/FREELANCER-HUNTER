@@ -59,6 +59,10 @@ const Index = () => {
             <Newspaper className="mr-2 h-4 w-4" />
             Noticias
           </Button>
+          {/* Nuevo botón para Acceso Administrador */}
+          <Link to="/admin/login">
+            <Button variant="outline">Acceso Administrador</Button>
+          </Link>
           <Link to="/login">
             <Button>Inicio / Registro</Button>
           </Link>
