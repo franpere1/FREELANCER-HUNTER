@@ -195,7 +195,7 @@ const AdminDashboard = () => {
 
   const handleLogout = () => {
     sessionStorage.removeItem('isAdmin');
-    navigate('/admin/login');
+    navigate('/'); // Changed from '/admin/login' to '/'
   };
 
   const onPasswordChangeSubmit = async (data: AdminPasswordFormData) => {
