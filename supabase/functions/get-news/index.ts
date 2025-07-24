@@ -16,9 +16,8 @@ serve(async (req) => {
       throw new Error('El secreto NEWS_API_KEY no está configurado en Supabase.')
     }
 
-    // Obtener el código de país de la cabecera de Supabase
     const locationHeader = req.headers.get('x-supabase-edge-location');
-    let countryCode = 'us'; // Usar 'us' como predeterminado si no se encuentra la ubicación
+    let countryCode: string | null = null;
 
     if (locationHeader) {
       const parts = locationHeader.split(', ');
@@ -28,12 +27,14 @@ serve(async (req) => {
       }
     }
 
-    const newsApiUrl = `https://newsapi.org/v2/top-headlines?country=${countryCode}&apiKey=${NEWS_API_KEY}`;
+    let newsApiUrl = `https://newsapi.org/v2/top-headlines?apiKey=${NEWS_API_KEY}`;
+    if (countryCode) {
+      newsApiUrl += `&country=${countryCode}`;
+    }
     
     const newsResponse = await fetch(newsApiUrl);
     if (!newsResponse.ok) {
       const errorData = await newsResponse.json();
-      // NewsAPI puede no tener soporte para todos los países, devolvemos un array vacío en ese caso.
       if (errorData.code === 'countryInvalid') {
          return new Response(JSON.stringify([]), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

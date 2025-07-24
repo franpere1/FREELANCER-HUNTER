@@ -76,7 +76,7 @@ const NewsDialog: React.FC<NewsDialogProps> = ({ isOpen, onClose }) => {
             Noticias de tu Región
           </DialogTitle>
           <DialogDescription>
-            Últimos titulares basados en tu ubicación. Si no vemos noticias, puede que tu país no esté soportado.
+            Últimos titulares de tu región. Si no podemos detectar tu ubicación, te mostraremos las noticias más importantes del mundo.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[60vh] pr-6">
