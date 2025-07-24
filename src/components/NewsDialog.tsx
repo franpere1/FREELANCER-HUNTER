@@ -73,10 +73,10 @@ const NewsDialog: React.FC<NewsDialogProps> = ({ isOpen, onClose }) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-2xl">
             <Newspaper className="h-6 w-6" />
-            Noticias de tu Región
+            Noticias Relevantes
           </DialogTitle>
           <DialogDescription>
-            Últimos titulares de tu región. Si no podemos detectar tu ubicación o no es soportada, te mostraremos noticias generales del mundo.
+            Últimos titulares y noticias más relevantes a nivel mundial.
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[60vh] pr-6">
@@ -111,7 +111,7 @@ const NewsDialog: React.FC<NewsDialogProps> = ({ isOpen, onClose }) => {
                   </div>
                 </a>
               )) : (
-                <p className="text-center text-gray-500 py-10">No se encontraron noticias para tu región.</p>
+                <p className="text-center text-gray-500 py-10">No se encontraron noticias.</p>
               )}
             </div>
           )}

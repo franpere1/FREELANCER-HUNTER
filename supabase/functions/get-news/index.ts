@@ -5,10 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-const supportedCountries = new Set([
-  'ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de', 'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 'lv', 'ma', 'mx', 'my', 'ng', 'nl', 'no', 'nz', 'ph', 'pl', 'pt', 'ro', 'rs', 'ru', 'sa', 'se', 'sg', 'si', 'sk', 'th', 'tr', 'tw', 'ua', 'us', 've', 'za'
-]);
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -20,39 +16,9 @@ serve(async (req) => {
       throw new Error('El secreto NEWS_API_KEY no está configurado en Supabase.')
     }
 
-    const locationHeader = req.headers.get('x-supabase-edge-location');
-    console.log(`[News Function] Received location header: ${locationHeader}`); // Log de diagnóstico
-
-    let countryCode: string | null = null;
-
-    if (locationHeader) {
-      const parts = locationHeader.split(', ');
-      const countryPart = parts.find(part => part.startsWith('country='));
-      if (countryPart) {
-        countryCode = countryPart.split('=')[1].trim().toLowerCase();
-      }
-    }
-
-    // --- INICIO DE LA MODIFICACIÓN PARA PRUEBAS ---
-    // Si no se detecta un código de país (común en entornos de desarrollo),
-    // forzamos uno para demostrar la funcionalidad.
-    if (!countryCode) {
-      countryCode = 'jp'; // Forzamos Japón para la prueba
-      console.log(`[News Function] No location detected. FORCING country code to: ${countryCode} for testing.`);
-    }
-    // --- FIN DE LA MODIFICACIÓN PARA PRUEBAS ---
-    
-    console.log(`[News Function] Determined country code: ${countryCode}`); // Log de diagnóstico
-
-    let newsApiUrl = `https://newsapi.org/v2/top-headlines?apiKey=${NEWS_API_KEY}`;
-
-    if (countryCode && supportedCountries.has(countryCode)) {
-      newsApiUrl += `&country=${countryCode}`;
-      console.log(`[News Function] Fetching news for country: ${countryCode}`); // Log de diagnóstico
-    } else {
-      newsApiUrl += `&category=general`;
-      console.log(`[News Function] Falling back to general news.`); // Log de diagnóstico
-    }
+    // Se ha eliminado la detección de ubicación para obtener siempre noticias generales.
+    const newsApiUrl = `https://newsapi.org/v2/top-headlines?category=general&apiKey=${NEWS_API_KEY}`;
+    console.log(`[News Function] Fetching general news.`);
     
     const newsResponse = await fetch(newsApiUrl);
     
