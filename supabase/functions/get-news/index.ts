@@ -5,7 +5,6 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-// Lista de códigos de país soportados por NewsAPI para una validación rápida
 const supportedCountries = new Set([
   'ae', 'ar', 'at', 'au', 'be', 'bg', 'br', 'ca', 'ch', 'cn', 'co', 'cu', 'cz', 'de', 'eg', 'fr', 'gb', 'gr', 'hk', 'hu', 'id', 'ie', 'il', 'in', 'it', 'jp', 'kr', 'lt', 'lv', 'ma', 'mx', 'my', 'ng', 'nl', 'no', 'nz', 'ph', 'pl', 'pt', 'ro', 'rs', 'ru', 'sa', 'se', 'sg', 'si', 'sk', 'th', 'tr', 'tw', 'ua', 'us', 've', 'za'
 ]);
@@ -22,6 +21,8 @@ serve(async (req) => {
     }
 
     const locationHeader = req.headers.get('x-supabase-edge-location');
+    console.log(`[News Function] Received location header: ${locationHeader}`); // Log de diagnóstico
+
     let countryCode: string | null = null;
 
     if (locationHeader) {
@@ -31,13 +32,17 @@ serve(async (req) => {
         countryCode = countryPart.split('=')[1].trim().toLowerCase();
       }
     }
+    
+    console.log(`[News Function] Determined country code: ${countryCode}`); // Log de diagnóstico
 
     let newsApiUrl = `https://newsapi.org/v2/top-headlines?apiKey=${NEWS_API_KEY}`;
 
     if (countryCode && supportedCountries.has(countryCode)) {
       newsApiUrl += `&country=${countryCode}`;
+      console.log(`[News Function] Fetching news for country: ${countryCode}`); // Log de diagnóstico
     } else {
       newsApiUrl += `&category=general`;
+      console.log(`[News Function] Falling back to general news.`); // Log de diagnóstico
     }
     
     const newsResponse = await fetch(newsApiUrl);
@@ -48,11 +53,8 @@ serve(async (req) => {
     }
 
     const newsData = await newsResponse.json();
-
-    // --- Lógica de Traducción con DeepL ---
     const DEEPL_API_KEY = Deno.env.get('DEEPL_API_KEY');
 
-    // Si no hay clave de DeepL o no hay artículos, devolverlos como están.
     if (!DEEPL_API_KEY || !newsData.articles || newsData.articles.length === 0) {
       return new Response(JSON.stringify(newsData.articles || []), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -79,7 +81,6 @@ serve(async (req) => {
     });
 
     if (!deeplResponse.ok) {
-      // Si DeepL falla, simplemente devolvemos las noticias sin traducir para no romper la funcionalidad.
       console.error('DeepL API error:', await deeplResponse.text());
       return new Response(JSON.stringify(newsData.articles), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -90,7 +91,6 @@ serve(async (req) => {
     const deeplData = await deeplResponse.json();
     const translations = deeplData.translations.map((t: any) => t.text);
 
-    // Reconstruir los artículos con los textos traducidos
     const translatedArticles = newsData.articles.map((article: any, index: number) => ({
       ...article,
       title: translations[index * 2],
